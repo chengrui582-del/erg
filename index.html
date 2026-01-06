@@ -2,80 +2,248 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>前端社交網站（穩定版）</title>
+<title>City Social</title>
 <style>
-body { font-family: Arial; background:#f0f2f5; }
-.box {
-  max-width:400px; margin:80px auto;
-  background:white; padding:20px;
-  border-radius:8px;
+body {
+  margin:0;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(180deg,#0f2027,#203a43,#2c5364);
+  color:#fff;
 }
-input, button {
-  width:100%; padding:10px; margin:5px 0;
+.hidden{display:none}
+header{
+  padding:15px;
+  background:rgba(0,0,0,.4);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-button { background:#4267B2; color:white; border:none; cursor:pointer; }
-#msg { color:red; }
+button{
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+input,textarea{
+  width:100%;
+  padding:8px;
+  border-radius:6px;
+  border:none;
+  margin:5px 0;
+}
+#loginBox,#registerBox{
+  max-width:380px;
+  margin:80px auto;
+  background:rgba(0,0,0,.6);
+  padding:20px;
+  border-radius:10px;
+}
+#feed{
+  max-width:600px;
+  margin:20px auto;
+}
+.post{
+  background:rgba(0,0,0,.5);
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+.small{font-size:12px;opacity:.8}
+.action span{
+  margin-right:10px;
+  cursor:pointer;
+}
+.profile{
+  background:rgba(0,0,0,.5);
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
+.friend{
+  display:flex;
+  justify-content:space-between;
+  margin:5px 0;
+}
 </style>
 </head>
 <body>
 
-<div class="box">
-  <h2>註冊 / 登入</h2>
-  <input id="username" placeholder="帳號">
-  <input id="password" type="password" placeholder="密碼">
-  <button onclick="register()">註冊</button>
+<header id="top" class="hidden">
+  <div>🌃 City Social</div>
+  <div>
+    <span id="me"></span>
+    <button onclick="logout()">登出</button>
+  </div>
+</header>
+
+<!-- 登入 -->
+<div id="loginBox">
+  <h2>登入</h2>
+  <input id="l_user" placeholder="帳號">
+  <input id="l_pass" type="password" placeholder="密碼">
   <button onclick="login()">登入</button>
-  <p id="msg"></p>
+  <p onclick="showRegister()" style="cursor:pointer">沒有帳號？註冊</p>
+  <p id="l_msg"></p>
+</div>
+
+<!-- 註冊 -->
+<div id="registerBox" class="hidden">
+  <h2>註冊</h2>
+  <input id="r_user" placeholder="帳號">
+  <input id="r_pass" type="password" placeholder="密碼">
+  <button onclick="register()">註冊</button>
+  <p onclick="showLogin()" style="cursor:pointer">回登入</p>
+  <p id="r_msg"></p>
+</div>
+
+<!-- 主頁 -->
+<div id="main" class="hidden">
+
+  <div id="feed">
+
+    <div class="profile">
+      <h3>👤 個人頁</h3>
+      暱稱：
+      <input id="nickname">
+      <button onclick="saveProfile()">儲存</button>
+      <p class="small">好友：<span id="friendCount">0</span></p>
+    </div>
+
+    <textarea id="postText" placeholder="今天城市裡發生了什麼？"></textarea>
+    <button onclick="addPost()">發佈</button>
+
+    <div id="posts"></div>
+
+  </div>
 </div>
 
 <script>
-// 🔒 初始化（絕對不能少）
-if (!localStorage.getItem('users')) {
-  localStorage.setItem('users', JSON.stringify([]));
+/* ---------- 初始化 ---------- */
+const db = k => JSON.parse(localStorage.getItem(k)||"[]");
+const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+if(!localStorage.users) save("users",[]);
+if(!localStorage.posts) save("posts",[]);
+if(!localStorage.friends) save("friends",[]);
+
+let current = localStorage.currentUser||null;
+
+/* ---------- 登入狀態 ---------- */
+function showApp(){
+  loginBox.classList.add("hidden");
+  registerBox.classList.add("hidden");
+  main.classList.remove("hidden");
+  top.classList.remove("hidden");
+  me.textContent = current;
+  loadProfile();
+  renderPosts();
+}
+if(current) showApp();
+
+/* ---------- 註冊 / 登入 ---------- */
+function register(){
+  const u=r_user.value.trim(),p=r_pass.value;
+  if(!u||!p) return r_msg.textContent="請填完整";
+  const users=db("users");
+  if(users.find(x=>x.u===u)) return r_msg.textContent="帳號存在";
+  users.push({u,p,nick:u});
+  save("users",users);
+  r_msg.textContent="註冊成功";
+}
+function login(){
+  const u=l_user.value.trim(),p=l_pass.value;
+  const users=db("users");
+  if(!users.find(x=>x.u===u&&x.p===p))
+    return l_msg.textContent="錯誤";
+  current=u;
+  localStorage.currentUser=u;
+  showApp();
+}
+function logout(){
+  localStorage.removeItem("currentUser");
+  location.reload();
+}
+function showRegister(){
+  loginBox.classList.add("hidden");
+  registerBox.classList.remove("hidden");
+}
+function showLogin(){
+  registerBox.classList.add("hidden");
+  loginBox.classList.remove("hidden");
 }
 
-function register() {
-  const u = username.value.trim();
-  const p = password.value.trim();
-  const msg = document.getElementById('msg');
-
-  if (!u || !p) {
-    msg.textContent = '請輸入帳號與密碼';
-    return;
-  }
-
-  const users = JSON.parse(localStorage.getItem('users'));
-
-  if (users.find(x => x.username === u)) {
-    msg.textContent = '帳號已存在';
-    return;
-  }
-
-  users.push({ username: u, password: p });
-  localStorage.setItem('users', JSON.stringify(users));
-  msg.style.color = 'green';
-  msg.textContent = '✅ 註冊成功，請登入';
+/* ---------- 個人頁 ---------- */
+function loadProfile(){
+  const user=db("users").find(x=>x.u===current);
+  nickname.value=user.nick;
+  friendCount.textContent=db("friends")
+    .filter(f=>f.a===current||f.b===current).length;
+}
+function saveProfile(){
+  const users=db("users");
+  const u=users.find(x=>x.u===current);
+  u.nick=nickname.value.trim();
+  save("users",users);
 }
 
-function login() {
-  const u = username.value.trim();
-  const p = password.value.trim();
-  const msg = document.getElementById('msg');
+/* ---------- 貼文 ---------- */
+function addPost(){
+  if(!postText.value.trim()) return;
+  const posts=db("posts");
+  posts.unshift({
+    id:Date.now(),
+    user:current,
+    text:postText.value,
+    likes:[],
+    comments:[]
+  });
+  save("posts",posts);
+  postText.value="";
+  renderPosts();
+}
+function renderPosts(){
+  posts.innerHTML="";
+  db("posts").forEach(p=>{
+    const div=document.createElement("div");
+    div.className="post";
+    div.innerHTML=`
+<b>${p.user}</b>
+<p>${p.text}</p>
+<div class="action">
+<span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
+<span onclick="comment(${p.id})">💬 ${p.comments.length}</span>
+<span onclick="addFriend('${p.user}')">➕ 好友</span>
+</div>
+<div class="small">
+${p.comments.map(c=>`<div>${c.u}: ${c.t}</div>`).join("")}
+</div>`;
+    posts.appendChild(div);
+  });
+}
+function like(id){
+  const posts=db("posts");
+  const p=posts.find(x=>x.id===id);
+  if(!p.likes.includes(current)) p.likes.push(current);
+  save("posts",posts); renderPosts();
+}
+function comment(id){
+  const t=prompt("留言");
+  if(!t) return;
+  const posts=db("posts");
+  posts.find(x=>x.id===id).comments.push({u:current,t});
+  save("posts",posts); renderPosts();
+}
 
-  const users = JSON.parse(localStorage.getItem('users'));
-  const ok = users.find(x => x.username === u && x.password === p);
-
-  if (!ok) {
-    msg.style.color = 'red';
-    msg.textContent = '帳號或密碼錯誤';
-    return;
-  }
-
-  msg.style.color = 'green';
-  msg.textContent = '🎉 登入成功';
+/* ---------- 好友 ---------- */
+function addFriend(u){
+  if(u===current) return;
+  const f=db("friends");
+  if(f.find(x=>(x.a===current&&x.b===u)||(x.a===u&&x.b===current))) return;
+  f.push({a:current,b:u});
+  save("friends",f);
+  loadProfile();
 }
 </script>
-
 </body>
 </html>
 
