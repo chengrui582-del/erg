@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>城市風社交網站</title>
 <style>
-/* 全局 */
 body {
   font-family: 'Arial', sans-serif;
   margin:0;
@@ -18,6 +17,7 @@ header {
   color:white; padding:10px 20px;
   display:flex; justify-content:space-between; align-items:center;
   position:sticky; top:0;
+  z-index:10;
 }
 header a {
   color:white; text-decoration:none; margin-left:15px; cursor:pointer; font-weight:bold;
@@ -27,7 +27,7 @@ header a {
 }
 .feed { flex:2; display:flex; flex-direction:column; gap:15px; }
 .sidebar { flex:1; background:rgba(255,255,255,0.9); padding:15px; border-radius:10px; height:fit-content; }
-.post, .friend { background:rgba(255,255,255,0.95); padding:15px; border-radius:10px; }
+.post, .friend { background:rgba(255,255,255,0.95); padding:15px; border-radius:10px; margin-bottom:10px; }
 .post-header { display:flex; align-items:center; gap:10px; }
 .post-header img { width:40px; height:40px; border-radius:50%; }
 .post-content { margin:10px 0; }
@@ -87,83 +87,74 @@ button.send { width:100%; background:#4267B2; color:white; padding:8px; border:n
   </div>
 </div>
 
-<!-- 好友列表頁 -->
-<div class="container" id="friendsContainer" style="display:none;">
-  <div class="sidebar" id="myFriends"></div>
-</div>
-
 <script>
-// ================== 資料 ==================
+// ======== 初始化資料 ========
 let currentUser = null;
 if(!localStorage.users) localStorage.users = JSON.stringify([]);
 if(!localStorage.posts) localStorage.posts = JSON.stringify([]);
-if(!localStorage.friends) localStorage.friends = JSON.stringify([]);
+if(!localStorage.friendships) localStorage.friendships = JSON.stringify({});
 
-// ================== 頁面切換 ==================
+// ======== 頁面切換 ========
 function showSection(section){
-  document.getElementById('authContainer').style.display = 'none';
+  document.getElementById('authContainer').style.display='none';
   document.getElementById('feedContainer').style.display = section==='feed'?'flex':'none';
   document.getElementById('profileContainer').style.display = section==='profile'?'flex':'none';
-  document.getElementById('friendsContainer').style.display = section==='friends'?'flex':'none';
+  document.getElementById('friendsContainer')?.style.display = section==='friends'?'flex':'none';
   if(section==='feed') loadPosts();
   if(section==='profile') loadMyPosts();
   if(section==='friends') loadFriends();
 }
 
-// ================== 註冊 / 登入 ==================
+// ======== 註冊 / 登入 ========
 function register(){
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  let users = JSON.parse(localStorage.users);
+  const username=document.getElementById('username').value;
+  const password=document.getElementById('password').value;
+  let users=JSON.parse(localStorage.users);
   if(users.find(u=>u.username===username)){ document.getElementById('authMsg').textContent='帳號已存在'; return; }
   users.push({username,password,nickname:username});
-  localStorage.users = JSON.stringify(users);
+  localStorage.users=JSON.stringify(users);
   document.getElementById('authMsg').textContent='註冊成功';
 }
 function login(){
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  let users = JSON.parse(localStorage.users);
-  const user = users.find(u=>u.username===username && u.password===password);
-  if(user){ currentUser=user; showSection('feed'); document.getElementById('nicknameInput').value=user.nickname; document.getElementById('mainHeader').style.display='flex'; }
-  else{ document.getElementById('authMsg').textContent='帳號或密碼錯誤'; }
+  const username=document.getElementById('username').value;
+  const password=document.getElementById('password').value;
+  let users=JSON.parse(localStorage.users);
+  const user=users.find(u=>u.username===username && u.password===password);
+  if(user){ currentUser=user; showSection('feed'); document.getElementById('nicknameInput').value=user.nickname; document.getElementById('mainHeader').style.display='flex'; loadFriends(); }
+  else document.getElementById('authMsg').textContent='帳號或密碼錯誤';
 }
 function logout(){ currentUser=null; showSection('authContainer'); document.getElementById('mainHeader').style.display='none'; }
 
-// ================== 發貼文 / 貼文 ==================
+// ======== 貼文 / 留言 / 按讚 ========
 function addPost(){
-  const content = document.getElementById('newPost').value;
+  const content=document.getElementById('newPost').value;
   if(!content) return;
-  let posts = JSON.parse(localStorage.posts);
+  let posts=JSON.parse(localStorage.posts);
   posts.unshift({user:currentUser.username, content, likes:[], comments:[]});
-  localStorage.posts = JSON.stringify(posts);
+  localStorage.posts=JSON.stringify(posts);
   document.getElementById('newPost').value='';
   loadPosts(); loadMyPosts();
 }
 function loadPosts(){
-  const posts = JSON.parse(localStorage.posts);
-  const feed = document.getElementById('feed');
+  const posts=JSON.parse(localStorage.posts);
+  const feed=document.getElementById('feed');
   feed.innerHTML=`<div style="background:rgba(255,255,255,0.9); padding:10px; border-radius:10px;">
     <input type="text" id="newPost" placeholder="你在想什麼？">
     <button class="send" onclick="addPost()">發佈</button>
   </div>`;
   posts.forEach((p,i)=>{
     const div=document.createElement('div'); div.className='post';
-    let commentsHtml=''; p.comments.forEach(c=>{
-      commentsHtml+=`<p><strong>${c.user}:</strong> ${c.comment}</p>`;
-    });
+    let commentsHtml=''; p.comments.forEach(c=>{ commentsHtml+=`<p><strong>${c.user}:</strong> ${c.comment}</p>`; });
     div.innerHTML=`<div class="post-header"><strong>${p.user}</strong></div>
-    <div class="post-content">${p.content}</div>
-    <div class="post-actions">
-      <button onclick="likePost(${i})">👍 ${p.likes.length}</button>
-      <button onclick="commentPost(${i})">💬 留言 (${p.comments.length})</button>
-    </div>
-    <div class="comments">${commentsHtml}</div>`;
+      <div class="post-content">${p.content}</div>
+      <div class="post-actions">
+        <button onclick="likePost(${i})">👍 ${p.likes.length}</button>
+        <button onclick="commentPost(${i})">💬 ${p.comments.length}</button>
+      </div>
+      <div class="comments">${commentsHtml}</div>`;
     feed.appendChild(div);
   });
 }
-
-// 留言 / 按讚
 function commentPost(i){
   const comment=prompt("輸入留言：");
   if(!comment) return;
@@ -179,7 +170,7 @@ function likePost(i){
   loadPosts(); loadMyPosts();
 }
 
-// ================== 個人頁 ==================
+// ======== 個人頁 ========
 function loadMyPosts(){
   const posts=JSON.parse(localStorage.posts).filter(p=>p.user===currentUser.username);
   const div=document.getElementById('myPosts'); div.innerHTML='';
@@ -197,23 +188,39 @@ function updateProfile(){
   alert("暱稱已更新！");
 }
 
-// ================== 好友 ==================
-function loadFriends(){
-  let friends = JSON.parse(localStorage.friends);
-  const list=document.getElementById('friendList'); list.innerHTML='';
-  friends.forEach(f=>{
-    let d=document.createElement('div'); d.className='friend';
-    d.innerHTML=`${f} <button onclick="addFriend('${f}')">追蹤</button>`;
-    list.appendChild(d);
-  });
-}
-function addFriend(friend){
-  let friends=JSON.parse(localStorage.friends);
-  if(!friends.includes(friend)) friends.push(friend);
-  localStorage.friends=JSON.stringify(friends);
+// ======== 好友追蹤 ========
+function addFriend(friendUsername){
+  if(friendUsername===currentUser.username) return alert("不能加自己好友");
+  let friendships=JSON.parse(localStorage.friendships);
+  if(!friendships[currentUser.username]) friendships[currentUser.username]=[];
+  if(!friendships[currentUser.username].includes(friendUsername)){
+    friendships[currentUser.username].push(friendUsername);
+  }
+  localStorage.friendships=JSON.stringify(friendships);
   loadFriends();
 }
+function getMyFriends(){
+  let friendships=JSON.parse(localStorage.friendships);
+  return friendships[currentUser.username] || [];
+}
+function loadFriends(){
+  const list=document.getElementById('friendList');
+  list.innerHTML='';
+  let users=JSON.parse(localStorage.users);
+  users.forEach(u=>{
+    if(u.username===currentUser.username) return;
+    let d=document.createElement('div'); d.className='friend';
+    d.innerHTML=`${u.nickname||u.username} <button onclick="addFriend('${u.username}')">加好友</button>`;
+    list.appendChild(d);
+  });
+  let myFriends=getMyFriends();
+  if(myFriends.length>0){
+    let h=document.createElement('h4'); h.textContent="已加好友："; list.appendChild(h);
+    myFriends.forEach(f=>{
+      let d=document.createElement('div'); d.textContent=f; list.appendChild(d);
+    });
+  }
+}
 </script>
-
 </body>
 </html>
