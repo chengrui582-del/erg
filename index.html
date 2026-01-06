@@ -6,8 +6,7 @@
 <style>
 *{box-sizing:border-box}
 body{
-  margin:0;
-  font-family:"Segoe UI",sans-serif;
+  margin:0;font-family:"Segoe UI",sans-serif;
   color:#fff;
   background:linear-gradient(#050b16,#0f2027,#203a43);
   overflow-x:hidden;
@@ -21,63 +20,29 @@ header{
   justify-content:space-between;
   align-items:center;
 }
-button{
-  border:none;border-radius:6px;
-  padding:6px 12px;
-  cursor:pointer;
-}
-input,textarea{
-  width:100%;padding:8px;
-  border-radius:6px;border:none;
-  margin:5px 0;
-}
-#loginBox,#registerBox{
-  max-width:380px;
-  margin:80px auto;
-  background:rgba(0,0,0,.65);
-  padding:20px;border-radius:12px;
-}
+button{border:none;border-radius:6px;padding:6px 12px;cursor:pointer}
+input,textarea{width:100%;padding:8px;border-radius:6px;border:none;margin:5px 0}
+#loginBox,#registerBox{max-width:380px;margin:80px auto;background:rgba(0,0,0,.65);padding:20px;border-radius:12px}
 #app{max-width:900px;margin:20px auto;display:flex;gap:20px}
-#left{flex:2}
-#right{flex:1}
-.card{
-  background:rgba(0,0,0,.55);
-  padding:12px;border-radius:12px;
-  margin-bottom:15px;
-}
+#left{flex:2}#right{flex:1}
+.card{background:rgba(0,0,0,.55);padding:12px;border-radius:12px;margin-bottom:15px}
 .post img{max-width:100%;border-radius:10px;margin-top:8px}
 .small{font-size:12px;opacity:.8}
 .action span{margin-right:10px;cursor:pointer}
 .city{
   position:fixed;bottom:0;left:0;right:0;
   height:180px;pointer-events:none;
-  background:
-    repeating-linear-gradient(
-      to right,
-      #000 0 20px,
-      #111 20px 40px
-    );
+  background:repeating-linear-gradient(to right,#000 0 20px,#111 20px 40px);
   opacity:.6;
 }
 .city:before{
   content:"";
   position:absolute;inset:0;
-  background:
-    repeating-linear-gradient(
-      to right,
-      transparent 0 18px,
-      #ffd700 18px 20px
-    );
+  background:repeating-linear-gradient(to right,transparent 0 18px,#ffd700 18px 20px);
   animation:lights 3s infinite alternate;
 }
-@keyframes lights{
-  from{opacity:.3}to{opacity:.8}
-}
-.list-item{
-  display:flex;
-  justify-content:space-between;
-  margin:4px 0;
-}
+@keyframes lights{from{opacity:.3}to{opacity:.8}}
+.list-item{display:flex;justify-content:space-between;margin:4px 0}
 </style>
 </head>
 <body>
@@ -92,7 +57,6 @@ input,textarea{
   </div>
 </header>
 
-<!-- 登入 -->
 <div id="loginBox">
   <h2>登入</h2>
   <input id="l_user" placeholder="帳號">
@@ -102,7 +66,6 @@ input,textarea{
   <p id="l_msg"></p>
 </div>
 
-<!-- 註冊 -->
 <div id="registerBox" class="hidden">
   <h2>註冊</h2>
   <input id="r_user" placeholder="帳號">
@@ -112,7 +75,6 @@ input,textarea{
   <p id="r_msg"></p>
 </div>
 
-<!-- 主系統 -->
 <div id="app" class="hidden">
   <div id="left">
 
@@ -142,12 +104,12 @@ input,textarea{
     </div>
 
     <div class="card">
-      <h3>👥 好友</h3>
+      <h3>👥 好友清單</h3>
       <div id="friendList"></div>
     </div>
 
     <div class="card">
-      <h3>💬 私訊</h3>
+      <h3>💬 私訊聊天</h3>
       <div id="chatList"></div>
     </div>
 
@@ -158,13 +120,10 @@ input,textarea{
 /* ---------- 工具 ---------- */
 const db=k=>JSON.parse(localStorage.getItem(k)||"[]");
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-
-["users","posts","friends","follows","chats"]
-.forEach(k=>{if(!localStorage[k])save(k,[])})
-
+["users","posts","friends","follows","chats"].forEach(k=>{if(!localStorage[k])save(k,[])});
 let current=localStorage.currentUser||null;
 
-/* ---------- 狀態 ---------- */
+/* ---------- 顯示 ---------- */
 function showApp(){
   loginBox.classList.add("hidden");
   registerBox.classList.add("hidden");
@@ -175,7 +134,7 @@ function showApp(){
 }
 if(current)showApp();
 
-/* ---------- 登入系統 ---------- */
+/* ---------- 登入 / 註冊 ---------- */
 function register(){
   const u=r_user.value.trim(),p=r_pass.value;
   if(!u||!p)return r_msg.textContent="請填完整";
@@ -187,8 +146,7 @@ function register(){
 }
 function login(){
   const u=l_user.value.trim(),p=l_pass.value;
-  if(!db("users").find(x=>x.u===u&&x.p===p))
-    return l_msg.textContent="錯誤";
+  if(!db("users").find(x=>x.u===u&&x.p===p))return l_msg.textContent="錯誤";
   current=u;localStorage.currentUser=u;showApp();
 }
 function logout(){
@@ -219,10 +177,7 @@ function addPost(){
   const imgFile=postImg.files[0];
   const posts=db("posts");
   const finish=(img)=>{
-    posts.unshift({
-      id:Date.now(),user:current,text:postText.value,
-      img,likes:[],comments:[]
-    });
+    posts.unshift({id:Date.now(),user:current,text:postText.value,img,likes:[],comments:[]});
     save("posts",posts);
     postText.value="";postImg.value="";
     renderPosts();
@@ -245,8 +200,8 @@ ${p.img?`<img src="${p.img}">`:""}
 <div class="action">
 <span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
 <span onclick="comment(${p.id})">💬 ${p.comments.length}</span>
-${p.user!==current?`<span onclick="addFriend('${p.user}')">➕ 好友</span>
-<span onclick="follow('${p.user}')">⭐ 追蹤</span>`:""}
+${p.user!==current?`<span onclick="addFriend('${p.user}')">➕ 加好友</span>
+<span onclick="follow('${p.user}')">⭐ 追蹤</span>`:"<span class='small'>(你的貼文)</span>"}
 </div>
 ${p.comments.map(c=>`<div class="small">${c.u}: ${c.t}</div>`).join("")}
 `;
@@ -269,9 +224,9 @@ function comment(id){
 
 /* ---------- 好友 / 追蹤 ---------- */
 function addFriend(u){
-  if(u===current)return;
+  if(u===current)return alert("不能加自己");
   const f=db("friends");
-  if(f.find(x=>(x.a===current&&x.b===u)||(x.a===u&&x.b===current)))return;
+  if(f.find(x=>(x.a===current&&x.b===u)||(x.a===u&&x.b===current)))return alert("已是好友");
   f.push({a:current,b:u});
   save("friends",f);loadProfile();renderFriends();renderChats();
 }
@@ -315,4 +270,3 @@ function chat(u){
 </script>
 </body>
 </html>
-
