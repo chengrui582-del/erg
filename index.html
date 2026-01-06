@@ -3,31 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>社交網站完整版</title>
+<title>城市風社交網站</title>
 <style>
-body { font-family: Arial; margin:0; background:#f0f2f5; }
-header { background:#4267B2; color:white; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; }
-header h1 { margin:0; }
-nav a { color:white; margin-left:15px; text-decoration:none; font-weight:bold; cursor:pointer; }
-.container { display:flex; max-width:1200px; margin:20px auto; gap:20px; }
-.sidebar { flex:1; background:white; padding:15px; border-radius:10px; height:fit-content; }
-.feed { flex:2; display:flex; flex-direction:column; gap:20px; }
-.post, .friend { background:white; padding:15px; border-radius:10px; }
+/* 全局 */
+body {
+  font-family: 'Arial', sans-serif;
+  margin:0;
+  background: url('https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+  background-size: cover;
+  color:#333;
+}
+header {
+  background: rgba(0,0,0,0.7);
+  color:white; padding:10px 20px;
+  display:flex; justify-content:space-between; align-items:center;
+  position:sticky; top:0;
+}
+header a {
+  color:white; text-decoration:none; margin-left:15px; cursor:pointer; font-weight:bold;
+}
+.container {
+  max-width:1000px; margin:20px auto; display:flex; gap:20px;
+}
+.feed { flex:2; display:flex; flex-direction:column; gap:15px; }
+.sidebar { flex:1; background:rgba(255,255,255,0.9); padding:15px; border-radius:10px; height:fit-content; }
+.post, .friend { background:rgba(255,255,255,0.95); padding:15px; border-radius:10px; }
 .post-header { display:flex; align-items:center; gap:10px; }
 .post-header img { width:40px; height:40px; border-radius:50%; }
 .post-content { margin:10px 0; }
 .post-actions { display:flex; gap:10px; }
 .post-actions button { cursor:pointer; padding:5px 10px; border:none; border-radius:5px; background:#e4e6eb; }
-.friend img { width:40px; height:40px; border-radius:50%; margin-right:10px; vertical-align:middle; }
-input[type=text], input[type=email], input[type=password] { width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; margin-bottom:5px; }
+input[type=text], input[type=password] { width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; margin-bottom:5px; }
 button.send { width:100%; background:#4267B2; color:white; padding:8px; border:none; border-radius:5px; cursor:pointer; }
-#authContainer { max-width:400px; margin:50px auto; background:white; padding:20px; border-radius:10px; }
+#authContainer { max-width:400px; margin:50px auto; background:rgba(255,255,255,0.95); padding:20px; border-radius:10px; }
 </style>
 </head>
 <body>
 
 <header style="display:none;" id="mainHeader">
-  <h1>社交網站 Demo</h1>
+  <h1>城市風社交網站</h1>
   <nav>
     <a onclick="showSection('feed')">首頁</a>
     <a onclick="showSection('profile')">個人頁</a>
@@ -36,19 +50,20 @@ button.send { width:100%; background:#4267B2; color:white; padding:8px; border:n
   </nav>
 </header>
 
+<!-- 註冊 / 登入 -->
 <div id="authContainer">
   <h2>註冊 / 登入</h2>
-  <input type="email" id="email" placeholder="Email">
-  <input type="text" id="username" placeholder="使用者名稱 (註冊用)">
-  <input type="password" id="password" placeholder="密碼">
+  <input type="text" id="username" placeholder="使用者名稱"><br>
+  <input type="password" id="password" placeholder="密碼"><br>
   <button onclick="register()">註冊</button>
   <button onclick="login()">登入</button>
   <p id="authMsg" style="color:red;"></p>
 </div>
 
+<!-- 首頁動態牆 -->
 <div class="container" id="feedContainer" style="display:none;">
   <div class="feed" id="feed">
-    <div style="background:white; padding:15px; border-radius:10px;">
+    <div style="background:rgba(255,255,255,0.9); padding:10px; border-radius:10px;">
       <input type="text" id="newPost" placeholder="你在想什麼？">
       <button class="send" onclick="addPost()">發佈</button>
     </div>
@@ -59,156 +74,146 @@ button.send { width:100%; background:#4267B2; color:white; padding:8px; border:n
   </div>
 </div>
 
+<!-- 個人頁 -->
 <div class="container" id="profileContainer" style="display:none;">
-  <div class="feed" id="profileFeed"></div>
+  <div class="feed">
+    <div style="background:rgba(255,255,255,0.9); padding:10px; border-radius:10px; margin-bottom:10px;">
+      <h3>編輯暱稱</h3>
+      <input type="text" id="nicknameInput" placeholder="暱稱">
+      <button class="send" onclick="updateProfile()">儲存修改</button>
+    </div>
+    <h3>我的貼文</h3>
+    <div id="myPosts"></div>
+  </div>
 </div>
 
+<!-- 好友列表頁 -->
 <div class="container" id="friendsContainer" style="display:none;">
   <div class="sidebar" id="myFriends"></div>
 </div>
 
 <script>
-const API = "http://localhost:3000/api";
-let token = "";
-let currentUser = {};
+// ================== 資料 ==================
+let currentUser = null;
+if(!localStorage.users) localStorage.users = JSON.stringify([]);
+if(!localStorage.posts) localStorage.posts = JSON.stringify([]);
+if(!localStorage.friends) localStorage.friends = JSON.stringify([]);
 
-function register(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const username = document.getElementById('username').value;
-  fetch(API+'/register',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email,password,username})
-  }).then(res=>res.json()).then(res=>{
-    document.getElementById('authMsg').textContent = res.message || res.error;
-  });
-}
-
-function login(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  fetch(API+'/login',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email,password})
-  }).then(res=>res.json()).then(res=>{
-    if(res.token){
-      token = res.token;
-      currentUser = {username: res.username, avatar: res.avatar};
-      document.getElementById('authContainer').style.display='none';
-      document.getElementById('mainHeader').style.display='flex';
-      document.getElementById('feedContainer').style.display='flex';
-      loadPosts();
-      loadFriends();
-    } else {
-      document.getElementById('authMsg').textContent = res.error;
-    }
-  });
-}
-
-function logout(){
-  token = "";
-  currentUser = {};
-  document.getElementById('mainHeader').style.display='none';
-  document.getElementById('feedContainer').style.display='none';
-  document.getElementById('profileContainer').style.display='none';
-  document.getElementById('friendsContainer').style.display='none';
-  document.getElementById('authContainer').style.display='block';
-}
-
-function authFetch(url, options={}){
-  options.headers = options.headers || {};
-  options.headers['Authorization'] = token;
-  return fetch(url, options).then(res=>res.json());
-}
-
-// 貼文
-function loadPosts(){
-  authFetch(API+'/posts').then(posts=>{
-    const feed = document.getElementById('feed');
-    feed.innerHTML = `<div style="background:white; padding:15px; border-radius:10px;">
-      <input type="text" id="newPost" placeholder="你在想什麼？">
-      <button class="send" onclick="addPost()">發佈</button>
-    </div>`;
-    posts.forEach((p,i)=>{
-      const div = document.createElement('div');
-      div.className='post';
-      const user = p.userId;
-      let commentsHtml = '';
-      p.comments.forEach(c=>{
-        commentsHtml += `<p><strong>${c.userId.username}:</strong> ${c.comment}</p>`;
-      });
-      div.innerHTML = `
-        <div class="post-header">
-          <img src="${user.avatarUrl||'https://via.placeholder.com/40'}">
-          <strong>${user.username}</strong>
-        </div>
-        <div class="post-content">${p.content}</div>
-        <div class="post-actions">
-          <button onclick="likePost('${p._id}')">👍 按讚 (${p.likes.length})</button>
-          <button onclick="commentPost('${p._id}')">💬 留言 (${p.comments.length})</button>
-        </div>
-        <div class="comments">${commentsHtml}</div>
-      `;
-      feed.appendChild(div);
-    });
-  });
-}
-
-function addPost(){
-  const content = document.getElementById('newPost').value;
-  if(!content) return;
-  authFetch(API+'/posts',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({content})
-  }).then(()=>{ document.getElementById('newPost').value=''; loadPosts(); });
-}
-
-function likePost(id){
-  authFetch(API+`/posts/${id}/like`, {method:'POST'}).then(()=>loadPosts());
-}
-
-function commentPost(id){
-  const comment = prompt("輸入留言：");
-  if(comment){
-    authFetch(API+`/posts/${id}/comment`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({comment})
-    }).then(()=>loadPosts());
-  }
-}
-
-// 好友
-function loadFriends(){
-  authFetch(API+'/friends').then(friends=>{
-    const list = document.getElementById('friendList');
-    list.innerHTML='';
-    const myList = document.getElementById('myFriends');
-    myList.innerHTML='';
-    friends.forEach(f=>{
-      const div = document.createElement('div');
-      div.className='friend';
-      div.innerHTML=`<img src="${f.avatarUrl||'https://via.placeholder.com/40'}">${f.username} <button onclick="addFriend('${f._id}')">追蹤</button>`;
-      list.appendChild(div.cloneNode(true));
-      myList.appendChild(div);
-    });
-  });
-}
-
-function addFriend(id){
-  authFetch(API+`/friends/${id}`, {method:'POST'}).then(()=>loadFriends());
-}
-
-// 切換頁面
+// ================== 頁面切換 ==================
 function showSection(section){
+  document.getElementById('authContainer').style.display = 'none';
   document.getElementById('feedContainer').style.display = section==='feed'?'flex':'none';
   document.getElementById('profileContainer').style.display = section==='profile'?'flex':'none';
   document.getElementById('friendsContainer').style.display = section==='friends'?'flex':'none';
+  if(section==='feed') loadPosts();
+  if(section==='profile') loadMyPosts();
+  if(section==='friends') loadFriends();
 }
 
+// ================== 註冊 / 登入 ==================
+function register(){
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  let users = JSON.parse(localStorage.users);
+  if(users.find(u=>u.username===username)){ document.getElementById('authMsg').textContent='帳號已存在'; return; }
+  users.push({username,password,nickname:username});
+  localStorage.users = JSON.stringify(users);
+  document.getElementById('authMsg').textContent='註冊成功';
+}
+function login(){
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  let users = JSON.parse(localStorage.users);
+  const user = users.find(u=>u.username===username && u.password===password);
+  if(user){ currentUser=user; showSection('feed'); document.getElementById('nicknameInput').value=user.nickname; document.getElementById('mainHeader').style.display='flex'; }
+  else{ document.getElementById('authMsg').textContent='帳號或密碼錯誤'; }
+}
+function logout(){ currentUser=null; showSection('authContainer'); document.getElementById('mainHeader').style.display='none'; }
+
+// ================== 發貼文 / 貼文 ==================
+function addPost(){
+  const content = document.getElementById('newPost').value;
+  if(!content) return;
+  let posts = JSON.parse(localStorage.posts);
+  posts.unshift({user:currentUser.username, content, likes:[], comments:[]});
+  localStorage.posts = JSON.stringify(posts);
+  document.getElementById('newPost').value='';
+  loadPosts(); loadMyPosts();
+}
+function loadPosts(){
+  const posts = JSON.parse(localStorage.posts);
+  const feed = document.getElementById('feed');
+  feed.innerHTML=`<div style="background:rgba(255,255,255,0.9); padding:10px; border-radius:10px;">
+    <input type="text" id="newPost" placeholder="你在想什麼？">
+    <button class="send" onclick="addPost()">發佈</button>
+  </div>`;
+  posts.forEach((p,i)=>{
+    const div=document.createElement('div'); div.className='post';
+    let commentsHtml=''; p.comments.forEach(c=>{
+      commentsHtml+=`<p><strong>${c.user}:</strong> ${c.comment}</p>`;
+    });
+    div.innerHTML=`<div class="post-header"><strong>${p.user}</strong></div>
+    <div class="post-content">${p.content}</div>
+    <div class="post-actions">
+      <button onclick="likePost(${i})">👍 ${p.likes.length}</button>
+      <button onclick="commentPost(${i})">💬 留言 (${p.comments.length})</button>
+    </div>
+    <div class="comments">${commentsHtml}</div>`;
+    feed.appendChild(div);
+  });
+}
+
+// 留言 / 按讚
+function commentPost(i){
+  const comment=prompt("輸入留言：");
+  if(!comment) return;
+  let posts=JSON.parse(localStorage.posts);
+  posts[i].comments.push({user:currentUser.username, comment});
+  localStorage.posts=JSON.stringify(posts);
+  loadPosts(); loadMyPosts();
+}
+function likePost(i){
+  let posts=JSON.parse(localStorage.posts);
+  if(!posts[i].likes.includes(currentUser.username)) posts[i].likes.push(currentUser.username);
+  localStorage.posts=JSON.stringify(posts);
+  loadPosts(); loadMyPosts();
+}
+
+// ================== 個人頁 ==================
+function loadMyPosts(){
+  const posts=JSON.parse(localStorage.posts).filter(p=>p.user===currentUser.username);
+  const div=document.getElementById('myPosts'); div.innerHTML='';
+  posts.forEach(p=>{
+    let d=document.createElement('div'); d.className='post'; d.innerHTML=p.content;
+    div.appendChild(d);
+  });
+}
+function updateProfile(){
+  let users=JSON.parse(localStorage.users);
+  let u=users.find(u=>u.username===currentUser.username);
+  u.nickname=document.getElementById('nicknameInput').value;
+  localStorage.users=JSON.stringify(users);
+  currentUser.nickname=u.nickname;
+  alert("暱稱已更新！");
+}
+
+// ================== 好友 ==================
+function loadFriends(){
+  let friends = JSON.parse(localStorage.friends);
+  const list=document.getElementById('friendList'); list.innerHTML='';
+  friends.forEach(f=>{
+    let d=document.createElement('div'); d.className='friend';
+    d.innerHTML=`${f} <button onclick="addFriend('${f}')">追蹤</button>`;
+    list.appendChild(d);
+  });
+}
+function addFriend(friend){
+  let friends=JSON.parse(localStorage.friends);
+  if(!friends.includes(friend)) friends.push(friend);
+  localStorage.friends=JSON.stringify(friends);
+  loadFriends();
+}
 </script>
+
 </body>
 </html>
