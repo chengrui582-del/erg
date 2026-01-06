@@ -1,77 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-  <title>簡單社交網站</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社交網站 UI 原型</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#f0f2f5; }
+  header { background:#4267B2; color:white; padding:10px 20px; display:flex; align-items:center; justify-content:space-between; }
+  header h1 { margin:0; font-size:24px; }
+  nav a { color:white; margin-left:20px; text-decoration:none; font-weight:bold; }
+  .container { display:flex; max-width:1200px; margin:20px auto; gap:20px; }
+  .sidebar { flex:1; background:white; padding:15px; border-radius:10px; height:fit-content; }
+  .feed { flex:2; display:flex; flex-direction:column; gap:20px; }
+  .post, .friend { background:white; padding:15px; border-radius:10px; }
+  .post-header { display:flex; align-items:center; gap:10px; }
+  .post-header img { width:40px; height:40px; border-radius:50%; }
+  .post-content { margin:10px 0; }
+  .post-actions { display:flex; gap:10px; }
+  .post-actions button { cursor:pointer; padding:5px 10px; border:none; border-radius:5px; background:#e4e6eb; }
+  .friend img { width:40px; height:40px; border-radius:50%; margin-right:10px; vertical-align:middle; }
+  input[type=text] { width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; }
+  button.send { margin-top:5px; background:#4267B2; color:white; width:100%; }
+</style>
 </head>
 <body>
+
+<header>
   <h1>社交網站 Demo</h1>
+  <nav>
+    <a href="#" onclick="showSection('feed')">首頁</a>
+    <a href="#" onclick="showSection('profile')">個人頁</a>
+    <a href="#" onclick="showSection('friends')">好友列表</a>
+  </nav>
+</header>
 
-  <div id="auth">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="signup()">註冊</button>
-    <button onclick="login()">登入</button>
+<div class="container">
+
+  <!-- 動態牆 -->
+  <div class="feed" id="feed">
+    <div style="background:white; padding:15px; border-radius:10px;">
+      <input type="text" id="newPost" placeholder="你在想什麼？">
+      <button class="send" onclick="addPost()">發佈</button>
+    </div>
   </div>
 
-  <div id="postSection" style="display:none;">
-    <input type="text" id="postContent" placeholder="輸入貼文">
-    <button onclick="addPost()">發貼文</button>
-    <h2>動態牆</h2>
-    <div id="feed"></div>
+  <!-- 側邊欄 / 好友 -->
+  <div class="sidebar" id="sidebar">
+    <h3>熱門好友</h3>
+    <div id="friendList"></div>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+</div>
 
-    function signup(){
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      auth.createUserWithEmailAndPassword(email, password)
-          .then(() => alert('註冊成功'))
-          .catch(err => alert(err.message));
-    }
+<!-- 個人頁面 -->
+<div class="container" id="profile" style="display:none;">
+  <div class="feed">
+    <div class="post">
+      <div class="post-header">
+        <img src="https://randomuser.me/api/portraits/men/1.jpg">
+        <strong>張三</strong>
+      </div>
+      <div class="post-content">這是我的個人頁範例貼文！</div>
+      <div class="post-actions">
+        <button onclick="likePost(this)">👍 按讚</button>
+        <button onclick="commentPost(this)">💬 留言</button>
+      </div>
+      <div class="comments"></div>
+    </div>
+  </div>
+</div>
 
-    function login(){
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            document.getElementById('auth').style.display='none';
-            document.getElementById('postSection').style.display='block';
-            loadPosts();
-          })
-          .catch(err => alert(err.message));
-    }
+<!-- 好友列表 -->
+<div class="container" id="friends" style="display:none;">
+  <div class="sidebar" style="flex:2;">
+    <h3>我的好友</h3>
+    <div id="myFriends"></div>
+  </div>
+</div>
 
-    function addPost(){
-      const content = document.getElementById('postContent').value;
-      const user = auth.currentUser.email;
-      db.ref('posts').push({user, content, timestamp:Date.now()});
-      document.getElementById('postContent').value='';
-    }
+<script>
+// 模擬資料
+let posts = [
+  {user:"王小明", avatar:"https://randomuser.me/api/portraits/men/2.jpg", content:"今天去爬山，好累！", likes:0, comments:[]},
+  {user:"李小美", avatar:"https://randomuser.me/api/portraits/women/2.jpg", content:"分享一張美食照🍰", likes:0, comments:[]}
+];
 
-    function loadPosts(){
-      db.ref('posts').on('value', snapshot => {
-        const feed = document.getElementById('feed');
-        feed.innerHTML='';
-        snapshot.forEach(child => {
-          const p = document.createElement('p');
-          p.textContent = child.val().user + ": " + child.val().content;
-          feed.appendChild(p);
-        });
-      });
-    }
-  </script>
+let friends = [
+  {name:"王小明", avatar:"https://randomuser.me/api/portraits/men/2.jpg"},
+  {name:"李小美", avatar:"https://randomuser.me/api/portraits/women/2.jpg"},
+  {name:"陳大文", avatar:"https://randomuser.me/api/portraits/men/3.jpg"}
+];
+
+// 顯示動態牆
+function renderFeed(){
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `
+    <div style="background:white; padding:15px; border-radius:10px;">
+      <input type="text" id="newPost" placeholder="你在想什麼？">
+      <button class="send" onclick="addPost()">發佈</button>
+    </div>
+  `;
+  posts.forEach((p,i)=>{
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.innerHTML = `
+      <div class="post-header">
+        <img src="${p.avatar}">
+        <strong>${p.user}</strong>
+      </div>
+      <div class="post-content">${p.content}</div>
+      <div class="post-actions">
+        <button onclick="likePostIndex(${i}, this)">👍 按讚 (${p.likes})</button>
+        <button onclick="commentPostIndex(${i}, this)">💬 留言 (${p.comments.length})</button>
+      </div>
+      <div class="comments"></div>
+    `;
+    feed.appendChild(div);
+  });
+}
+
+// 顯示好友列表
+function renderFriends(){
+  const list = document.getElementById('friendList');
+  list.innerHTML='';
+  friends.forEach(f=>{
+    const div = document.createElement('div');
+    div.className='friend';
+    div.innerHTML=`<img src="${f.avatar}"> ${f.name}`;
+    list.appendChild(div);
+  });
+
+  const myList = document.getElementById('myFriends');
+  myList.innerHTML='';
+  friends.forEach(f=>{
+    const div = document.createElement('div');
+    div.className='friend';
+    div.innerHTML=`<img src="${f.avatar}"> ${f.name}`;
+    myList.appendChild(div);
+  });
+}
+
+// 發貼文
+function addPost(){
+  const content = document.getElementById('newPost').value;
+  if(content.trim()==='') return;
+  posts.unshift({user:"你自己", avatar:"https://randomuser.me/api/portraits/men/5.jpg", content, likes:0, comments:[]});
+  document.getElementById('newPost').value='';
+  renderFeed();
+}
+
+// 按讚
+function likePostIndex(i, btn){
+  posts[i].likes++;
+  renderFeed();
+}
+
+// 留言
+function commentPostIndex(i, btn){
+  const comment = prompt("輸入留言：");
+  if(comment) {
+    posts[i].comments.push(comment);
+    renderFeed();
+  }
+}
+
+// 切換頁面
+function showSection(section){
+  document.getElementById('feed').parentElement.style.display = section==='feed'?'flex':'none';
+  document.getElementById('profile').style.display = section==='profile'?'flex':'none';
+  document.getElementById('friends').style.display = section==='friends'?'flex':'none';
+}
+
+// 初始化
+renderFeed();
+renderFriends();
+</script>
+
 </body>
 </html>
