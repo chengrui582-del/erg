@@ -4,65 +4,46 @@
 <meta charset="UTF-8">
 <title>City Social</title>
 <style>
-body {
-  margin:0;
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(180deg,#0f2027,#203a43,#2c5364);
+body{
+  margin:0;font-family:"Segoe UI";
+  background:linear-gradient(180deg,#0f2027,#203a43,#2c5364);
   color:#fff;
 }
 .hidden{display:none}
 header{
-  padding:15px;
   background:rgba(0,0,0,.4);
+  padding:15px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
 button{
-  padding:6px 12px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+  border:none;border-radius:6px;
+  padding:6px 12px;cursor:pointer;
 }
 input,textarea{
-  width:100%;
-  padding:8px;
-  border-radius:6px;
-  border:none;
-  margin:5px 0;
+  width:100%;padding:8px;
+  border-radius:6px;border:none;
+  margin:6px 0;
 }
 #loginBox,#registerBox{
   max-width:380px;
   margin:80px auto;
   background:rgba(0,0,0,.6);
-  padding:20px;
-  border-radius:10px;
+  padding:20px;border-radius:10px;
 }
-#feed{
-  max-width:600px;
-  margin:20px auto;
-}
+#feed{max-width:600px;margin:20px auto}
 .post{
   background:rgba(0,0,0,.5);
-  padding:12px;
-  border-radius:10px;
+  padding:12px;border-radius:10px;
   margin-bottom:15px;
 }
 .small{font-size:12px;opacity:.8}
-.action span{
-  margin-right:10px;
-  cursor:pointer;
-}
+.action span{margin-right:10px;cursor:pointer}
 .profile{
   background:rgba(0,0,0,.5);
-  padding:15px;
-  border-radius:10px;
+  padding:15px;border-radius:10px;
   margin-bottom:20px;
-}
-.friend{
-  display:flex;
-  justify-content:space-between;
-  margin:5px 0;
 }
 </style>
 </head>
@@ -96,9 +77,8 @@ input,textarea{
   <p id="r_msg"></p>
 </div>
 
-<!-- 主頁 -->
+<!-- 主畫面 -->
 <div id="main" class="hidden">
-
   <div id="feed">
 
     <div class="profile">
@@ -106,35 +86,34 @@ input,textarea{
       暱稱：
       <input id="nickname">
       <button onclick="saveProfile()">儲存</button>
-      <p class="small">好友：<span id="friendCount">0</span></p>
+      <p class="small">好友數：<span id="friendCount">0</span></p>
     </div>
 
     <textarea id="postText" placeholder="今天城市裡發生了什麼？"></textarea>
     <button onclick="addPost()">發佈</button>
 
     <div id="posts"></div>
-
   </div>
 </div>
 
 <script>
-/* ---------- 初始化 ---------- */
-const db = k => JSON.parse(localStorage.getItem(k)||"[]");
-const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+/* ---------- 工具 ---------- */
+const db=k=>JSON.parse(localStorage.getItem(k)||"[]");
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 
 if(!localStorage.users) save("users",[]);
 if(!localStorage.posts) save("posts",[]);
 if(!localStorage.friends) save("friends",[]);
 
-let current = localStorage.currentUser||null;
+let current = localStorage.currentUser || null;
 
-/* ---------- 登入狀態 ---------- */
+/* ---------- 顯示 ---------- */
 function showApp(){
   loginBox.classList.add("hidden");
   registerBox.classList.add("hidden");
   main.classList.remove("hidden");
   top.classList.remove("hidden");
-  me.textContent = current;
+  me.textContent=current;
   loadProfile();
   renderPosts();
 }
@@ -148,19 +127,21 @@ function register(){
   if(users.find(x=>x.u===u)) return r_msg.textContent="帳號存在";
   users.push({u,p,nick:u});
   save("users",users);
-  r_msg.textContent="註冊成功";
+  r_msg.textContent="✅ 註冊成功";
 }
 function login(){
   const u=l_user.value.trim(),p=l_pass.value;
   const users=db("users");
   if(!users.find(x=>x.u===u&&x.p===p))
-    return l_msg.textContent="錯誤";
+    return l_msg.textContent="帳號或密碼錯誤";
   current=u;
   localStorage.currentUser=u;
   showApp();
 }
 function logout(){
+  if(!confirm("確定登出？")) return;
   localStorage.removeItem("currentUser");
+  current=null;
   location.reload();
 }
 function showRegister(){
@@ -174,15 +155,14 @@ function showLogin(){
 
 /* ---------- 個人頁 ---------- */
 function loadProfile(){
-  const user=db("users").find(x=>x.u===current);
-  nickname.value=user.nick;
+  const u=db("users").find(x=>x.u===current);
+  nickname.value=u.nick;
   friendCount.textContent=db("friends")
     .filter(f=>f.a===current||f.b===current).length;
 }
 function saveProfile(){
   const users=db("users");
-  const u=users.find(x=>x.u===current);
-  u.nick=nickname.value.trim();
+  users.find(x=>x.u===current).nick=nickname.value.trim();
   save("users",users);
 }
 
@@ -212,7 +192,7 @@ function renderPosts(){
 <div class="action">
 <span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
 <span onclick="comment(${p.id})">💬 ${p.comments.length}</span>
-<span onclick="addFriend('${p.user}')">➕ 好友</span>
+${p.user!==current?`<span onclick="addFriend('${p.user}')">➕ 加好友</span>`:""}
 </div>
 <div class="small">
 ${p.comments.map(c=>`<div>${c.u}: ${c.t}</div>`).join("")}
@@ -227,7 +207,7 @@ function like(id){
   save("posts",posts); renderPosts();
 }
 function comment(id){
-  const t=prompt("留言");
+  const t=prompt("留言內容");
   if(!t) return;
   const posts=db("posts");
   posts.find(x=>x.id===id).comments.push({u:current,t});
@@ -235,15 +215,17 @@ function comment(id){
 }
 
 /* ---------- 好友 ---------- */
-function addFriend(u){
-  if(u===current) return;
-  const f=db("friends");
-  if(f.find(x=>(x.a===current&&x.b===u)||(x.a===u&&x.b===current))) return;
-  f.push({a:current,b:u});
-  save("friends",f);
+function addFriend(target){
+  if(target===current) return alert("不能加自己");
+  const friends=db("friends");
+  if(friends.find(f=>
+    (f.a===current&&f.b===target)||(f.a===target&&f.b===current)
+  )) return alert("已是好友");
+  friends.push({a:current,b:target,time:Date.now()});
+  save("friends",friends);
+  alert("✅ 加好友成功");
   loadProfile();
 }
 </script>
 </body>
 </html>
-
