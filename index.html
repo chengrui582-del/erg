@@ -4,268 +4,265 @@
 <meta charset="UTF-8">
 <title>City Social</title>
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:"Segoe UI",sans-serif;
-  color:#fff;
-  background:linear-gradient(#050b16,#0f2027,#203a43);
-  overflow-x:hidden;
+:root{
+  --bg:#0f1115;
+  --card:#1a1d23;
+  --border:#2a2e36;
+  --accent:#1da1f2;
 }
-.hidden{display:none}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI"}
+body{
+  margin:0;
+  background:var(--bg);
+  color:#e4e6eb;
+}
 header{
   position:sticky;top:0;z-index:10;
-  background:rgba(0,0,0,.6);
-  padding:12px 20px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  background:#000c;
+  backdrop-filter:blur(10px);
+  display:flex;justify-content:space-between;
+  padding:10px 24px;
+  border-bottom:1px solid var(--border);
 }
-button{border:none;border-radius:6px;padding:6px 12px;cursor:pointer}
-input,textarea{width:100%;padding:8px;border-radius:6px;border:none;margin:5px 0}
-#loginBox,#registerBox{max-width:380px;margin:80px auto;background:rgba(0,0,0,.65);padding:20px;border-radius:12px}
-#app{max-width:900px;margin:20px auto;display:flex;gap:20px}
-#left{flex:2}#right{flex:1}
-.card{background:rgba(0,0,0,.55);padding:12px;border-radius:12px;margin-bottom:15px}
-.post img{max-width:100%;border-radius:10px;margin-top:8px}
-.small{font-size:12px;opacity:.8}
-.action span{margin-right:10px;cursor:pointer}
-.city{
-  position:fixed;bottom:0;left:0;right:0;
-  height:180px;pointer-events:none;
-  background:repeating-linear-gradient(to right,#000 0 20px,#111 20px 40px);
-  opacity:.6;
+button{
+  border:none;border-radius:20px;
+  padding:6px 14px;
+  background:var(--accent);
+  color:#fff;
+  cursor:pointer;
 }
-.city:before{
-  content:"";
-  position:absolute;inset:0;
-  background:repeating-linear-gradient(to right,transparent 0 18px,#ffd700 18px 20px);
-  animation:lights 3s infinite alternate;
+#logoutBtn{background:#e74c3c}
+.hidden{display:none}
+
+.container{
+  max-width:1200px;margin:auto;
+  display:grid;grid-template-columns:2.2fr 1fr;
+  gap:24px;padding:24px;
 }
-@keyframes lights{from{opacity:.3}to{opacity:.8}}
-.list-item{display:flex;justify-content:space-between;margin:4px 0}
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 10px 30px #0005;
+  margin-bottom:20px;
+}
+input,textarea{
+  width:100%;border-radius:10px;
+  border:1px solid var(--border);
+  background:#000;
+  color:#fff;
+  padding:10px;
+}
+.post-header{
+  display:flex;align-items:center;gap:10px;
+}
+.avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:#555;
+}
+.post img{
+  width:100%;border-radius:12px;margin-top:10px;
+}
+.actions span{
+  margin-right:16px;cursor:pointer;
+}
+.friend{
+  display:flex;justify-content:space-between;
+  align-items:center;margin:6px 0;
+}
 </style>
 </head>
 <body>
 
-<div class="city"></div>
-
 <header id="top" class="hidden">
   <b>🌃 City Social</b>
   <div>
-    <span id="me"></span>
-    <button onclick="logout()">登出</button>
+    <span id="userLabel"></span>
+    <button id="logoutBtn" onclick="logout()">登出</button>
   </div>
 </header>
 
-<div id="loginBox">
-  <h2>登入</h2>
-  <input id="l_user" placeholder="帳號">
-  <input id="l_pass" type="password" placeholder="密碼">
-  <button onclick="login()">登入</button>
-  <p onclick="showRegister()" style="cursor:pointer">沒有帳號？註冊</p>
-  <p id="l_msg"></p>
+<!-- 登入 -->
+<div id="login" class="container">
+  <div class="card">
+    <h2>登入 / 註冊</h2>
+    <input id="acc" placeholder="帳號">
+    <input id="pw" type="password" placeholder="密碼">
+    <button onclick="auth()">開始使用</button>
+  </div>
 </div>
 
-<div id="registerBox" class="hidden">
-  <h2>註冊</h2>
-  <input id="r_user" placeholder="帳號">
-  <input id="r_pass" type="password" placeholder="密碼">
-  <button onclick="register()">註冊</button>
-  <p onclick="showLogin()" style="cursor:pointer">回登入</p>
-  <p id="r_msg"></p>
-</div>
+<!-- App -->
+<div id="app" class="hidden container">
 
-<div id="app" class="hidden">
-  <div id="left">
-
+  <!-- Feed -->
+  <div>
     <div class="card">
-      <h3>📝 發文</h3>
-      <textarea id="postText" placeholder="今天城市裡發生了什麼？"></textarea>
-      <input type="file" id="postImg">
-      <button onclick="addPost()">發佈</button>
+      <textarea id="text" placeholder="分享你的城市故事..."></textarea>
+      <input type="file" id="img">
+      <button onclick="post()">發佈</button>
     </div>
-
     <div id="posts"></div>
-
   </div>
 
-  <div id="right">
-
+  <!-- Side -->
+  <div>
     <div class="card">
       <h3>👤 個人</h3>
-      暱稱
-      <input id="nickname">
-      <button onclick="saveProfile()">儲存</button>
-      <p class="small">
-        好友 <span id="friendCount">0</span> ｜  
-        追蹤 <span id="followCount">0</span> ｜  
-        粉絲 <span id="fanCount">0</span>
-      </p>
+      <input id="nick">
+      <button onclick="saveNick()">儲存</button>
+      <div id="stat"></div>
     </div>
 
     <div class="card">
-      <h3>👥 好友清單</h3>
-      <div id="friendList"></div>
+      <h3>👥 好友</h3>
+      <div id="friends"></div>
     </div>
-
-    <div class="card">
-      <h3>💬 私訊聊天</h3>
-      <div id="chatList"></div>
-    </div>
-
   </div>
+
 </div>
 
 <script>
-/* ---------- 工具 ---------- */
-const db=k=>JSON.parse(localStorage.getItem(k)||"[]");
-const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-["users","posts","friends","follows","chats"].forEach(k=>{if(!localStorage[k])save(k,[])});
-let current=localStorage.currentUser||null;
+const LS = localStorage;
+let users = JSON.parse(LS.users || "{}");
+let posts = JSON.parse(LS.posts || "[]");
+let current = LS.current || "";
 
-/* ---------- 顯示 ---------- */
+const loginDiv = document.getElementById("login");
+const appDiv   = document.getElementById("app");
+const topBar   = document.getElementById("top");
+
+function auth(){
+  if(!acc.value || !pw.value){
+    alert("請輸入帳號與密碼");
+    return;
+  }
+  if(!users[acc.value]){
+    users[acc.value] = { pw: pw.value, nick: acc.value, friends: [] };
+  }
+  if(users[acc.value].pw !== pw.value){
+    alert("密碼錯誤");
+    return;
+  }
+  current = acc.value;
+  LS.current = current;
+  save();
+  showApp();
+}
+
 function showApp(){
-  loginBox.classList.add("hidden");
-  registerBox.classList.add("hidden");
-  app.classList.remove("hidden");
-  top.classList.remove("hidden");
-  me.textContent=current;
-  loadProfile();renderPosts();renderFriends();renderChats();
-}
-if(current)showApp();
+  if(!current || !users[current]){
+    logout();
+    return;
+  }
+  loginDiv.classList.add("hidden");
+  appDiv.classList.remove("hidden");
+  topBar.classList.remove("hidden");
 
-/* ---------- 登入 / 註冊 ---------- */
-function register(){
-  const u=r_user.value.trim(),p=r_pass.value;
-  if(!u||!p)return r_msg.textContent="請填完整";
-  const users=db("users");
-  if(users.find(x=>x.u===u))return r_msg.textContent="帳號存在";
-  users.push({u,p,nick:u});
-  save("users",users);
-  r_msg.textContent="✅ 註冊成功";
+  userLabel.textContent = current;
+  nick.value = users[current].nick;
+
+  render();
 }
-function login(){
-  const u=l_user.value.trim(),p=l_pass.value;
-  if(!db("users").find(x=>x.u===u&&x.p===p))return l_msg.textContent="錯誤";
-  current=u;localStorage.currentUser=u;showApp();
-}
+
 function logout(){
-  if(!confirm("確定登出？"))return;
-  localStorage.removeItem("currentUser");
+  LS.removeItem("current");
   location.reload();
 }
-function showRegister(){loginBox.classList.add("hidden");registerBox.classList.remove("hidden")}
-function showLogin(){registerBox.classList.add("hidden");loginBox.classList.remove("hidden")}
 
-/* ---------- 個人 ---------- */
-function loadProfile(){
-  const u=db("users").find(x=>x.u===current);
-  nickname.value=u.nick;
-  friendCount.textContent=db("friends").filter(f=>f.a===current||f.b===current).length;
-  followCount.textContent=db("follows").filter(f=>f.from===current).length;
-  fanCount.textContent=db("follows").filter(f=>f.to===current).length;
-}
-function saveProfile(){
-  const users=db("users");
-  users.find(x=>x.u===current).nick=nickname.value.trim();
-  save("users",users);
+function saveNick(){
+  users[current].nick = nick.value;
+  save();
+  render();
 }
 
-/* ---------- 貼文 ---------- */
-function addPost(){
-  if(!postText.value.trim())return;
-  const imgFile=postImg.files[0];
-  const posts=db("posts");
-  const finish=(img)=>{
-    posts.unshift({id:Date.now(),user:current,text:postText.value,img,likes:[],comments:[]});
-    save("posts",posts);
-    postText.value="";postImg.value="";
-    renderPosts();
+function post(){
+  if(!current){
+    alert("請先登入");
+    return;
   }
-  if(imgFile){
-    const r=new FileReader();
-    r.onload=()=>finish(r.result);
-    r.readAsDataURL(imgFile);
-  }else finish(null);
+  if(!text.value){
+    alert("請輸入內容");
+    return;
+  }
+  const f = img.files[0];
+  if(f){
+    const r = new FileReader();
+    r.onload = () => addPost(r.result);
+    r.readAsDataURL(f);
+  }else{
+    addPost("");
+  }
 }
-function renderPosts(){
-  posts.innerHTML="";
-  db("posts").forEach(p=>{
-    const d=document.createElement("div");
-    d.className="card post";
-    d.innerHTML=`
-<b>${p.user}</b>
-<p>${p.text}</p>
-${p.img?`<img src="${p.img}">`:""}
-<div class="action">
-<span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
-<span onclick="comment(${p.id})">💬 ${p.comments.length}</span>
-${p.user!==current?`<span onclick="addFriend('${p.user}')">➕ 加好友</span>
-<span onclick="follow('${p.user}')">⭐ 追蹤</span>`:"<span class='small'>(你的貼文)</span>"}
-</div>
-${p.comments.map(c=>`<div class="small">${c.u}: ${c.t}</div>`).join("")}
-`;
-    posts.appendChild(d);
+
+function addPost(imgData){
+  posts.unshift({
+    id: Date.now(),
+    user: current,
+    text: text.value,
+    img: imgData,
+    likes: []
   });
+  text.value = "";
+  img.value = "";
+  save();
+  render();
 }
+
 function like(id){
-  const posts=db("posts");
-  const p=posts.find(x=>x.id===id);
-  if(!p.likes.includes(current))p.likes.push(current);
-  save("posts",posts);renderPosts();
-}
-function comment(id){
-  const t=prompt("留言");
-  if(!t)return;
-  const posts=db("posts");
-  posts.find(x=>x.id===id).comments.push({u:current,t});
-  save("posts",posts);renderPosts();
+  const p = posts.find(p=>p.id===id);
+  if(!p) return;
+  const i = p.likes.indexOf(current);
+  i>=0 ? p.likes.splice(i,1) : p.likes.push(current);
+  save();
+  render();
 }
 
-/* ---------- 好友 / 追蹤 ---------- */
 function addFriend(u){
-  if(u===current)return alert("不能加自己");
-  const f=db("friends");
-  if(f.find(x=>(x.a===current&&x.b===u)||(x.a===u&&x.b===current)))return alert("已是好友");
-  f.push({a:current,b:u});
-  save("friends",f);loadProfile();renderFriends();renderChats();
-}
-function follow(u){
-  const f=db("follows");
-  if(!f.find(x=>x.from===current&&x.to===u)){
-    f.push({from:current,to:u});
-    save("follows",f);loadProfile();
-  }
-}
-function renderFriends(){
-  friendList.innerHTML="";
-  db("friends").filter(f=>f.a===current||f.b===current)
-    .forEach(f=>{
-      const u=f.a===current?f.b:f.a;
-      friendList.innerHTML+=`<div class="list-item">${u}</div>`;
-    });
+  if(users[current].friends.includes(u)) return;
+  users[current].friends.push(u);
+  users[u].friends.push(current);
+  save();
+  render();
 }
 
-/* ---------- 私訊 ---------- */
-function renderChats(){
-  chatList.innerHTML="";
-  db("friends").filter(f=>f.a===current||f.b===current)
-    .forEach(f=>{
-      const u=f.a===current?f.b:f.a;
-      chatList.innerHTML+=
-      `<div class="list-item">
-        ${u}
-        <button onclick="chat('${u}')">聊</button>
-      </div>`;
-    });
+function render(){
+  postsDiv.innerHTML = "";
+  posts.forEach(p=>{
+    postsDiv.innerHTML += `
+    <div class="card post">
+      <div class="post-header">
+        <div class="avatar"></div>
+        <b>${users[p.user].nick}</b>
+      </div>
+      <div>${p.text}</div>
+      ${p.img ? `<img src="${p.img}">` : ""}
+      <div class="actions">
+        <span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
+        ${p.user!==current ? `<span onclick="addFriend('${p.user}')">➕ 好友</span>` : ""}
+      </div>
+    </div>`;
+  });
+
+  friends.innerHTML = "";
+  users[current].friends.forEach(f=>{
+    friends.innerHTML += `<div class="friend">${users[f].nick}</div>`;
+  });
+
+  stat.textContent = `好友 ${users[current].friends.length}`;
 }
-function chat(u){
-  const t=prompt(`傳訊給 ${u}`);
-  if(!t)return;
-  const c=db("chats");
-  c.push({a:current,b:u,t,ts:Date.now()});
-  save("chats",c);
-  alert("已送出");
+
+function save(){
+  LS.users = JSON.stringify(users);
+  LS.posts = JSON.stringify(posts);
+}
+
+if(current && users[current]){
+  showApp();
+}else{
+  topBar.classList.add("hidden");
+  appDiv.classList.add("hidden");
+  loginDiv.classList.remove("hidden");
 }
 </script>
 </body>
