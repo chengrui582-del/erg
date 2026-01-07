@@ -1,269 +1,128 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
 <title>City Social</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-:root{
-  --bg:#0f1115;
-  --card:#1a1d23;
-  --border:#2a2e36;
-  --accent:#1da1f2;
-}
-*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI"}
 body{
-  margin:0;
-  background:var(--bg);
-  color:#e4e6eb;
+  margin:0;color:#fff;
+  background:
+    linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.85)),
+    url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63") center/cover fixed;
+  font-family:-apple-system,BlinkMacSystemFont;
 }
 header{
-  position:sticky;top:0;z-index:10;
-  background:#000c;
-  backdrop-filter:blur(10px);
   display:flex;justify-content:space-between;
-  padding:10px 24px;
-  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  background:#000c;
 }
 button{
+  background:#1f6feb;color:#fff;
   border:none;border-radius:20px;
-  padding:6px 14px;
-  background:var(--accent);
-  color:#fff;
-  cursor:pointer;
-}
-#logoutBtn{background:#e74c3c}
-.hidden{display:none}
-
-.container{
-  max-width:1200px;margin:auto;
-  display:grid;grid-template-columns:2.2fr 1fr;
-  gap:24px;padding:24px;
-}
-.card{
-  background:var(--card);
-  border-radius:16px;
-  padding:16px;
-  box-shadow:0 10px 30px #0005;
-  margin-bottom:20px;
+  padding:8px 14px;cursor:pointer;
 }
 input,textarea{
-  width:100%;border-radius:10px;
-  border:1px solid var(--border);
-  background:#000;
-  color:#fff;
-  padding:10px;
+  width:100%;background:#000;
+  border:1px solid #333;color:#fff;
+  padding:10px;border-radius:10px;
 }
-.post-header{
-  display:flex;align-items:center;gap:10px;
+main{display:grid;grid-template-columns:2fr 1fr;gap:20px;padding:20px}
+.card{
+  background:#111c;border-radius:16px;
+  padding:16px;margin-bottom:16px;
 }
-.avatar{
-  width:42px;height:42px;border-radius:50%;
-  background:#555;
-}
-.post img{
-  width:100%;border-radius:12px;margin-top:10px;
-}
-.actions span{
-  margin-right:16px;cursor:pointer;
-}
-.friend{
-  display:flex;justify-content:space-between;
-  align-items:center;margin:6px 0;
-}
+.hidden{display:none}
+.post img{width:100%;border-radius:12px;margin-top:8px}
 </style>
 </head>
-<body>
 
-<header id="top" class="hidden">
-  <b>🌃 City Social</b>
-  <div>
-    <span id="userLabel"></span>
-    <button id="logoutBtn" onclick="logout()">登出</button>
-  </div>
+<body>
+<header>
+  <h3>🌃 City Social</h3>
+  <button id="logout" class="hidden">登出</button>
 </header>
 
-<!-- 登入 -->
-<div id="login" class="container">
-  <div class="card">
-    <h2>登入 / 註冊</h2>
-    <input id="acc" placeholder="帳號">
-    <input id="pw" type="password" placeholder="密碼">
-    <button onclick="auth()">開始使用</button>
-  </div>
-</div>
-
-<!-- App -->
-<div id="app" class="hidden container">
-
-  <!-- Feed -->
-  <div>
-    <div class="card">
-      <textarea id="text" placeholder="分享你的城市故事..."></textarea>
-      <input type="file" id="img">
-      <button onclick="post()">發佈</button>
-    </div>
-    <div id="posts"></div>
+<main>
+<section>
+  <div class="card" id="auth">
+    <h3>登入 / 註冊</h3>
+    <input id="user" placeholder="帳號">
+    <input id="pass" type="password" placeholder="密碼">
+    <button onclick="login()">開始</button>
   </div>
 
-  <!-- Side -->
-  <div>
-    <div class="card">
-      <h3>👤 個人</h3>
-      <input id="nick">
-      <button onclick="saveNick()">儲存</button>
-      <div id="stat"></div>
-    </div>
-
-    <div class="card">
-      <h3>👥 好友</h3>
-      <div id="friends"></div>
-    </div>
+  <div class="card hidden" id="postBox">
+    <textarea id="text" placeholder="分享城市故事..."></textarea>
+    <input type="file" id="img">
+    <button onclick="publish()">發布</button>
   </div>
 
-</div>
+  <div id="feed"></div>
+</section>
+
+<aside>
+  <div class="card hidden" id="profile">👤 <span id="me"></span></div>
+</aside>
+</main>
 
 <script>
-const LS = localStorage;
-let users = JSON.parse(LS.users || "{}");
-let posts = JSON.parse(LS.posts || "[]");
-let current = LS.current || "";
+let current=null
+const users=JSON.parse(localStorage.users||"{}")
+const posts=JSON.parse(localStorage.posts||"[]")
 
-const loginDiv = document.getElementById("login");
-const appDiv   = document.getElementById("app");
-const topBar   = document.getElementById("top");
-
-function auth(){
-  if(!acc.value || !pw.value){
-    alert("請輸入帳號與密碼");
-    return;
-  }
-  if(!users[acc.value]){
-    users[acc.value] = { pw: pw.value, nick: acc.value, friends: [] };
-  }
-  if(users[acc.value].pw !== pw.value){
-    alert("密碼錯誤");
-    return;
-  }
-  current = acc.value;
-  LS.current = current;
-  save();
-  showApp();
+function save(){
+  localStorage.users=JSON.stringify(users)
+  localStorage.posts=JSON.stringify(posts)
 }
 
-function showApp(){
-  if(!current || !users[current]){
-    logout();
-    return;
-  }
-  loginDiv.classList.add("hidden");
-  appDiv.classList.remove("hidden");
-  topBar.classList.remove("hidden");
-
-  userLabel.textContent = current;
-  nick.value = users[current].nick;
-
-  render();
+function login(){
+  const u=user.value,p=pass.value
+  if(!u||!p)return alert("請輸入")
+  if(!users[u])users[u]={pass:p}
+  if(users[u].pass!==p)return alert("密碼錯")
+  current=u
+  auth.classList.add("hidden")
+  postBox.classList.remove("hidden")
+  profile.classList.remove("hidden")
+  logout.classList.remove("hidden")
+  me.textContent=u
+  render()
 }
 
-function logout(){
-  LS.removeItem("current");
-  location.reload();
-}
+logout.onclick=()=>location.reload()
 
-function saveNick(){
-  users[current].nick = nick.value;
-  save();
-  render();
-}
+function publish(){
+  if(!current)return alert("請先登入")
+  if(!text.value)return alert("請輸入內容")
 
-function post(){
-  if(!current){
-    alert("請先登入");
-    return;
-  }
-  if(!text.value){
-    alert("請輸入內容");
-    return;
-  }
-  const f = img.files[0];
-  if(f){
-    const r = new FileReader();
-    r.onload = () => addPost(r.result);
-    r.readAsDataURL(f);
+  const file=img.files[0]
+  if(file){
+    const r=new FileReader()
+    r.onload=e=>{
+      posts.unshift({u:current,t:text.value,img:e.target.result})
+      save();render()
+    }
+    r.readAsDataURL(file)
   }else{
-    addPost("");
+    posts.unshift({u:current,t:text.value})
+    save();render()
   }
-}
-
-function addPost(imgData){
-  posts.unshift({
-    id: Date.now(),
-    user: current,
-    text: text.value,
-    img: imgData,
-    likes: []
-  });
-  text.value = "";
-  img.value = "";
-  save();
-  render();
-}
-
-function like(id){
-  const p = posts.find(p=>p.id===id);
-  if(!p) return;
-  const i = p.likes.indexOf(current);
-  i>=0 ? p.likes.splice(i,1) : p.likes.push(current);
-  save();
-  render();
-}
-
-function addFriend(u){
-  if(users[current].friends.includes(u)) return;
-  users[current].friends.push(u);
-  users[u].friends.push(current);
-  save();
-  render();
+  text.value="";img.value=""
 }
 
 function render(){
-  postsDiv.innerHTML = "";
+  feed.innerHTML=""
   posts.forEach(p=>{
-    postsDiv.innerHTML += `
-    <div class="card post">
-      <div class="post-header">
-        <div class="avatar"></div>
-        <b>${users[p.user].nick}</b>
-      </div>
-      <div>${p.text}</div>
-      ${p.img ? `<img src="${p.img}">` : ""}
-      <div class="actions">
-        <span onclick="like(${p.id})">❤️ ${p.likes.length}</span>
-        ${p.user!==current ? `<span onclick="addFriend('${p.user}')">➕ 好友</span>` : ""}
-      </div>
-    </div>`;
-  });
-
-  friends.innerHTML = "";
-  users[current].friends.forEach(f=>{
-    friends.innerHTML += `<div class="friend">${users[f].nick}</div>`;
-  });
-
-  stat.textContent = `好友 ${users[current].friends.length}`;
-}
-
-function save(){
-  LS.users = JSON.stringify(users);
-  LS.posts = JSON.stringify(posts);
-}
-
-if(current && users[current]){
-  showApp();
-}else{
-  topBar.classList.add("hidden");
-  appDiv.classList.add("hidden");
-  loginDiv.classList.remove("hidden");
+    feed.innerHTML+=`
+      <div class="card post">
+        <b>${p.u}</b>
+        <div>${p.t}</div>
+        ${p.img?`<img src="${p.img}">`:""}
+      </div>`
+  })
 }
 </script>
 </body>
 </html>
+
