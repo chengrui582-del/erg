@@ -7,59 +7,68 @@
 
 <style>
 *{box-sizing:border-box}
+:root{
+  --card:#111c;
+  --text:#fff;
+}
+.light{
+  --card:#fff;
+  --text:#000;
+}
 body{
   margin:0;font-family:-apple-system,BlinkMacSystemFont;
   background:
-    linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.9)),
+    linear-gradient(rgba(0,0,0,.4),rgba(0,0,0,.7)),
     url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63") center/cover fixed;
-  color:#fff;
+  color:var(--text);
 }
 header{
   position:sticky;top:0;z-index:9;
-  background:#000c;
+  background:var(--card);
   padding:12px 16px;
   display:flex;justify-content:space-between;
 }
-button{
-  border:none;border-radius:20px;
-  padding:6px 12px;
-  background:#1f6feb;color:#fff;
-  cursor:pointer;
-}
-input,textarea{
-  width:100%;background:#000;
-  border:1px solid #333;
-  border-radius:10px;
-  color:#fff;padding:10px;
-}
-main{max-width:520px;margin:auto;padding:12px}
+main{max-width:520px;margin:auto;padding:12px;padding-bottom:80px}
 .card{
-  background:#111c;
+  background:var(--card);
   border-radius:18px;
   padding:14px;
   margin-bottom:16px;
 }
 .hidden{display:none}
-.post img{width:100%;border-radius:14px;margin-top:10px}
-.actions{
-  display:flex;gap:16px;font-size:20px;margin-top:8px
+button{
+  border:none;border-radius:20px;
+  padding:6px 12px;
+  background:#1f6feb;color:#fff;
 }
-.comment{font-size:14px;margin-top:6px;opacity:.9}
-.comment-box{display:flex;gap:6px;margin-top:6px}
-.comment-box input{flex:1}
-.userbar{
-  display:flex;justify-content:space-between;
-  align-items:center;
+textarea,input{
+  width:100%;background:transparent;
+  border:1px solid #444;
+  border-radius:10px;
+  color:var(--text);
+  padding:10px;
 }
-.friend{
-  font-size:13px;
-  padding:4px 10px;
-  border-radius:20px;
-  background:#333;
-  cursor:pointer;
+.carousel{
+  display:flex;overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  gap:8px;margin-top:8px;
 }
-.friend.add{background:#1f6feb}
-.friend.ok{background:#444}
+.carousel img{
+  flex:0 0 100%;
+  border-radius:14px;
+  scroll-snap-align:center;
+}
+.post-tools{
+  display:flex;gap:10px;
+  font-size:14px;margin-top:6px;
+}
+.post-tools span{cursor:pointer;opacity:.7}
+.post-tools span:hover{opacity:1}
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  display:flex;justify-content:space-around;
+  background:var(--card);padding:10px 0;
+}
 </style>
 </head>
 
@@ -67,11 +76,12 @@ main{max-width:520px;margin:auto;padding:12px}
 
 <header>
   <b>🌃 City Social</b>
-  <button id="logout" class="hidden">登出</button>
+  <span onclick="toggleMode()">🌙</span>
 </header>
 
 <main>
 
+<!-- 登入 -->
 <div class="card" id="auth">
   <h3>登入 / 註冊</h3>
   <input id="user" placeholder="帳號">
@@ -79,68 +89,101 @@ main{max-width:520px;margin:auto;padding:12px}
   <button onclick="login()">開始</button>
 </div>
 
-<div class="card hidden" id="postBox">
-  <textarea id="text" placeholder="分享城市生活..."></textarea>
-  <input type="file" id="img">
-  <button onclick="publish()">發布</button>
+<!-- HOME -->
+<div id="home" class="hidden">
+  <div class="card">
+    <textarea id="text" placeholder="分享城市生活…"></textarea>
+    <input type="file" id="img" multiple>
+    <button onclick="publish()" id="postBtn">發布</button>
+  </div>
+  <div id="feed"></div>
 </div>
-
-<div id="feed"></div>
 
 </main>
 
+<div class="nav hidden" id="nav">
+  <div onclick="show('home')">🏠</div>
+</div>
+
 <script>
 let current=null
+let editingIndex=null
 const users=JSON.parse(localStorage.users||"{}")
 const posts=JSON.parse(localStorage.posts||"[]")
+let mode=localStorage.mode||"dark"
+
+if(mode==="light")document.body.classList.add("light")
 
 function save(){
   localStorage.users=JSON.stringify(users)
   localStorage.posts=JSON.stringify(posts)
+  localStorage.mode=mode
+}
+
+function toggleMode(){
+  document.body.classList.toggle("light")
+  mode=document.body.classList.contains("light")?"light":"dark"
+  save()
 }
 
 function login(){
-  if(!user.value||!pass.value)return alert("請輸入")
-  if(!users[user.value])users[user.value]={pass:pass.value,friends:[]}
+  if(!users[user.value])
+    users[user.value]={pass:pass.value}
   if(users[user.value].pass!==pass.value)return alert("密碼錯")
   current=user.value
   auth.classList.add("hidden")
-  postBox.classList.remove("hidden")
-  logout.classList.remove("hidden")
+  nav.classList.remove("hidden")
+  show("home")
   render()
 }
-logout.onclick=()=>location.reload()
+
+function show(v){
+  home.classList.add("hidden")
+  document.getElementById(v).classList.remove("hidden")
+}
 
 function publish(){
   if(!text.value)return
-  const post={u:current,t:text.value,img:"",likes:[],comments:[]}
-  const f=img.files[0]
-  if(f){
-    const r=new FileReader()
-    r.onload=e=>{post.img=e.target.result;posts.unshift(post);save();render()}
-    r.readAsDataURL(f)
-  }else{posts.unshift(post);save();render()}
+  const files=[...img.files]
+  const post={u:current,t:text.value,imgs:[]}
+
+  const finish=()=>{
+    if(editingIndex===null){
+      posts.unshift(post)
+    }else{
+      posts[editingIndex]=post
+      editingIndex=null
+      postBtn.textContent="發布"
+    }
+    save();render()
+  }
+
+  if(files.length){
+    let loaded=0
+    files.forEach(f=>{
+      const r=new FileReader()
+      r.onload=e=>{
+        post.imgs.push(e.target.result)
+        if(++loaded===files.length)finish()
+      }
+      r.readAsDataURL(f)
+    })
+  }else finish()
+
   text.value="";img.value=""
 }
 
-function toggleLike(i){
-  const l=posts[i].likes
-  const idx=l.indexOf(current)
-  idx>-1?l.splice(idx,1):l.push(current)
-  save();render()
+function editPost(i){
+  const p=posts[i]
+  text.value=p.t
+  editingIndex=i
+  postBtn.textContent="儲存修改"
+  window.scrollTo({top:0,behavior:"smooth"})
 }
 
-function addComment(i,input){
-  if(!input.value)return
-  posts[i].comments.push({u:current,t:input.value})
-  save();render()
-}
-
-function addFriend(u){
-  if(u===current)return
-  if(!users[current].friends.includes(u)){
-    users[current].friends.push(u)
-    users[u].friends.push(current)
+function deletePost(i){
+  if(confirm("確定刪除這篇貼文？")){
+    posts.splice(i,1)
     save();render()
   }
 }
@@ -148,35 +191,21 @@ function addFriend(u){
 function render(){
   feed.innerHTML=""
   posts.forEach((p,i)=>{
-    const liked=p.likes.includes(current)
-    const isFriend=users[current].friends.includes(p.u)
     feed.innerHTML+=`
-    <div class="card post">
-      <div class="userbar">
-        <b>${p.u}</b>
-        ${p.u!==current?`
-          <div class="friend ${isFriend?"ok":"add"}"
-            onclick="addFriend('${p.u}')">
-            ${isFriend?"✓ 已是好友":"➕ 加好友"}
-          </div>`:""}
-      </div>
-
+    <div class="card">
+      <b>${p.u}</b>
       <div>${p.t}</div>
-      ${p.img?`<img src="${p.img}">`:""}
 
-      <div class="actions">
-        <span onclick="toggleLike(${i})">${liked?"❤️":"🤍"} ${p.likes.length}</span>
-        <span>💬 ${p.comments.length}</span>
-      </div>
+      ${p.imgs?.length?`
+        <div class="carousel">
+          ${p.imgs.map(img=>`<img src="${img}">`).join("")}
+        </div>`:""}
 
-      ${p.comments.map(c=>`
-        <div class="comment"><b>${c.u}</b> ${c.t}</div>
-      `).join("")}
-
-      <div class="comment-box">
-        <input placeholder="留言…" 
-          onkeydown="if(event.key==='Enter')addComment(${i},this)">
-      </div>
+      ${p.u===current?`
+      <div class="post-tools">
+        <span onclick="editPost(${i})">✏️ 編輯</span>
+        <span onclick="deletePost(${i})">🗑 刪除</span>
+      </div>`:""}
     </div>`
   })
 }
@@ -184,3 +213,4 @@ function render(){
 
 </body>
 </html>
+
