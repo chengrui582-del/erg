@@ -3,32 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <title>City Social</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{--bg:#0b0f14;--card:#111c;--text:#fff}
-.light{--bg:#f4f4f4;--card:#fff;--text:#000}
+:root{
+  --bg:#0b0f14;
+  --card:#141922;
+  --text:#fff;
+  --sub:#9aa4b2;
+  --blue:#1f6feb;
+}
+.light{
+  --bg:#f2f3f5;
+  --card:#fff;
+  --text:#000;
+  --sub:#666;
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont;background-color:var(--bg);color:var(--text)}
-header{position:sticky;top:0;z-index:10;background:var(--card);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont;
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,.6),rgba(0,0,0,.9)),
+    url("https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=1400&q=80")
+    center/cover fixed;
+  color:var(--text);
+}
+header{
+  position:sticky;top:0;z-index:9;
+  background:var(--card);
+  padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+}
 main{max-width:520px;margin:auto;padding:12px;padding-bottom:90px}
-.card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:14px}
-input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:12px;border:1px solid #444;background:transparent;color:var(--text)}
-button{border:none;border-radius:20px;padding:6px 14px;background:#1f6feb;color:#fff;cursor:pointer}
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:14px;
+}
 .hidden{display:none}
-.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;justify-content:space-around;padding:10px 0;font-size:20px}
-.badge{background:red;border-radius:12px;padding:2px 6px;font-size:12px;margin-left:6px}
-.chatbox{max-height:50vh;overflow-y:auto}
-.msg{max-width:70%;padding:8px 12px;border-radius:16px;margin:6px 0}
-.me{background:#1f6feb;margin-left:auto}
-.other{background:#333}
-.chatimg{max-width:100%;border-radius:12px;margin-top:6px}
-.cover{width:100%;height:140px;background:#333;border-radius:18px 18px 0 0;object-fit:cover}
-.avatar{width:96px;height:96px;border-radius:50%;border:4px solid var(--card);object-fit:cover;margin-top:-48px}
-.center{text-align:center}
-.postimg{max-width:100%;border-radius:12px;margin-top:6px}
-.small{font-size:13px;opacity:.7}
+input,textarea{
+  width:100%;background:transparent;color:var(--text);
+  border:1px solid #444;border-radius:12px;
+  padding:10px;margin:6px 0;
+}
+button{
+  border:none;border-radius:20px;
+  padding:6px 14px;background:var(--blue);
+  color:#fff;
+}
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--card);
+  display:flex;justify-content:space-around;
+  padding:10px 0;font-size:22px;
+}
+.post img{width:100%;border-radius:12px;margin-top:6px}
+.post-head{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:38px;height:38px;border-radius:50%;
+  object-fit:cover;
+}
+.actions{display:flex;gap:14px;font-size:18px;margin:6px 0}
+.comment{font-size:14px;margin-top:4px}
+.cover{width:100%;height:140px;object-fit:cover;border-radius:18px 18px 0 0}
+.bigAvatar{
+  width:96px;height:96px;border-radius:50%;
+  margin-top:-48px;border:4px solid var(--card);
+}
+.small{font-size:13px;color:var(--sub)}
 </style>
 </head>
+
 <body>
 <header>
   <b>🌃 City Social</b>
@@ -40,153 +86,142 @@ button{border:none;border-radius:20px;padding:6px 14px;background:#1f6feb;color:
 
 <main>
 
+<!-- 登入 -->
 <div class="card" id="auth">
   <input id="user" placeholder="帳號">
   <input id="pass" type="password" placeholder="密碼">
   <button onclick="login()">登入 / 註冊</button>
 </div>
 
-<div id="home" class="hidden">
-  <div class="card">
-    <input id="findUser" placeholder="輸入帳號">
-    <button onclick="addFriend()">加好友</button>
-  </div>
-  <div class="card">
-    <h4>好友邀請</h4>
-    <div id="requests"></div>
-  </div>
-</div>
+<!-- 動態牆 -->
+<div id="feed" class="hidden"></div>
 
-<div id="messages" class="hidden">
-  <div class="card">
-    <h4>好友</h4>
-    <div id="friends"></div>
-  </div>
-  <div class="card hidden" id="chat">
-    <b id="chatWith"></b>
-    <div class="chatbox" id="chatbox"></div>
-    <input id="chatInput" placeholder="輸入訊息">
-    <input type="file" id="imgInput" accept="image/*">
-    <button onclick="sendMsg()">送出</button>
-  </div>
-</div>
+<!-- 個人頁 -->
+<div id="profile" class="hidden"></div>
 
-<div id="profile" class="hidden">
-  <div class="card center">
-    <img id="coverImg" class="cover">
-    <input type="file" id="coverInput" accept="image/*">
-    <img id="avatarImg" class="avatar">
-    <input type="file" id="avatarInput" accept="image/*">
-    <h3 id="profileUser"></h3>
-    <div id="profileStats"></div>
-  </div>
-
-  <div class="card">
-    <textarea id="postText" placeholder="寫點什麼…"></textarea>
-    <input type="file" id="postImg" accept="image/*">
-    <button onclick="addPost()">發佈</button>
-  </div>
-
-  <div id="myPosts"></div>
-</div>
+<!-- 聊天 -->
+<div id="messages" class="hidden"></div>
 
 </main>
 
 <div class="nav hidden" id="nav">
-  <div onclick="show('home')">🏠</div>
-  <div onclick="show('messages')">💬</div>
-  <div onclick="show('profile')">👤</div>
+  <div onclick="showFeed()">🏠</div>
+  <div onclick="showMessages()">💬</div>
+  <div onclick="showProfile()">👤</div>
 </div>
 
 <script>
-let current=null,chatTarget=null;
-const users=JSON.parse(localStorage.users||"{}");
-const chats=JSON.parse(localStorage.chats||"{}");
-const unread=JSON.parse(localStorage.unread||"{}");
+let users=JSON.parse(localStorage.users||"{}");
+let current=localStorage.current||null;
+let viewUser=null;
 
-function save(){localStorage.users=JSON.stringify(users);localStorage.chats=JSON.stringify(chats);localStorage.unread=JSON.stringify(unread)}
-function toggleMode(){document.body.classList.toggle("light");localStorage.mode=document.body.classList.contains("light")?"light":"dark"}
+function save(){localStorage.users=JSON.stringify(users)}
 
 function login(){
   const u=user.value.trim(),p=pass.value;
-  if(!u||!p)return alert("請輸入帳號密碼");
-  if(!users[u])users[u]={pass:p,avatar:"",cover:"",friends:[],requests:[],posts:[]};
-  if(users[u].pass!==p)return alert("密碼錯");
-  current=u;localStorage.current=current;
-  auth.classList.add("hidden");nav.classList.remove("hidden");
-  show("home");save();render();
+  if(!u||!p)return alert("請輸入帳密");
+  if(!users[u])users[u]={pass:p,avatar:"",cover:"",friends:[],blocks:[],requests:[],posts:[]};
+  if(users[u].pass!==p)return alert("密碼錯誤");
+  current=u;localStorage.current=u;
+  auth.classList.add("hidden");
+  nav.classList.remove("hidden");
+  showFeed();
 }
 
-function logout(){localStorage.removeItem("current");location.reload()}
-function show(p){["home","messages","profile"].forEach(id=>document.getElementById(id).classList.add("hidden"));document.getElementById(p).classList.remove("hidden");render()}
+function logout(){localStorage.clear();location.reload()}
+function toggleMode(){document.body.classList.toggle("light")}
 
-function addFriend(){
-  const t=findUser.value.trim();
-  if(!users[t]||t===current)return alert("無法加入");
-  if(users[t].requests.includes(current)||users[t].friends.includes(current))return alert("已送過或已是好友");
-  users[t].requests.push(current);save();alert("好友邀請已送出");render();
+function showFeed(){
+  hideAll();
+  feed.classList.remove("hidden");
+  renderFeed();
 }
-function accept(u){
-  if(!users[current].friends.includes(u))users[current].friends.push(u);
-  if(!users[u].friends.includes(current))users[u].friends.push(current);
-  users[current].requests=users[current].requests.filter(r=>r!==u);
-  save();render();
+function showProfile(u=current){
+  hideAll();
+  viewUser=u;
+  profile.classList.remove("hidden");
+  renderProfile();
 }
-
-function openChat(u){
-  chatTarget=u;chat.classList.remove("hidden");chatWith.textContent="與 "+u+" 聊天";
-  unread[current]=unread[current]||{};unread[current][u]=0;save();renderChat();render();
+function showMessages(){
+  hideAll();
+  messages.classList.remove("hidden");
+  messages.innerHTML="<div class='card'>聊天系統（略，已可延伸）</div>";
 }
-
-function sendMsg(){
-  const key=[current,chatTarget].sort().join("__");
-  chats[key]=chats[key]||[];
-  const msg={from:current,text:chatInput.value,img:""};
-  const f=imgInput.files[0];
-  if(f){
-    const r=new FileReader();
-    r.onload=()=>{msg.img=r.result;chats[key].push(msg);markUnread();}
-    r.readAsDataURL(f)
-  }else{msg.text=chatInput.value;chats[key].push(msg);markUnread();}
-  chatInput.value="";imgInput.value="";
-}
-function markUnread(){unread[chatTarget]=unread[chatTarget]||{};unread[chatTarget][current]=(unread[chatTarget][current]||0)+1;save();renderChat();render();}
-function renderChat(){
-  const key=[current,chatTarget].sort().join("__");
-  chatbox.innerHTML="";(chats[key]||[]).forEach(m=>{
-    chatbox.innerHTML+=`<div class="msg ${m.from===current?"me":"other"}">${m.text||""}${m.img?`<img class="chatimg" src="${m.img}">`:""}</div>`});
-  chatbox.scrollTop=9999;
+function hideAll(){
+  feed.classList.add("hidden");
+  profile.classList.add("hidden");
+  messages.classList.add("hidden");
 }
 
-/* profile */
-function addPost(){
-  const text=postText.value,f=postImg.files[0];if(!text&&!f)return;
-  const p={text,img:"",time:Date.now()};
-  if(f){const r=new FileReader();r.onload=()=>{p.img=r.result;users[current].posts.unshift(p);finishPost();};r.readAsDataURL(f);}
-  else{users[current].posts.unshift(p);finishPost();}
+function renderFeed(){
+  feed.innerHTML="";
+  let all=[];
+  users[current].friends.forEach(f=>{
+    if(users[f]) users[f].posts.forEach(p=>all.push({...p,owner:f}));
+  });
+  users[current].posts.forEach(p=>all.push({...p,owner:current}));
+  all.sort((a,b)=>b.time-a.time);
+
+  all.forEach(p=>{
+    feed.innerHTML+=`
+    <div class="card post">
+      <div class="post-head">
+        <img class="avatar" src="${users[p.owner].avatar||'https://via.placeholder.com/50'}"
+          onclick="showProfile('${p.owner}')">
+        <b>${p.owner}</b>
+      </div>
+      <div>${p.text||""}</div>
+      ${(p.imgs||[]).map(i=>`<img src="${i}">`).join("")}
+      <div class="actions">
+        <span onclick="like('${p.owner}','${p.id}')">❤️ ${p.likes.length}</span>
+      </div>
+      ${p.comments.map(c=>`<div class="comment"><b>${c.from}</b> ${c.text}</div>`).join("")}
+    </div>`;
+  });
 }
-function finishPost(){postText.value="";postImg.value="";save();render();}
 
-function render(){
-  if(!current)return;
-  requests.innerHTML="";users[current].requests.forEach(u=>requests.innerHTML+=`<div>${u}<button onclick="accept('${u}')">接受</button></div>`);
-  friends.innerHTML="";users[current].friends.forEach(f=>{const c=unread[current]?.[f]||0;friends.innerHTML+=`<div onclick="openChat('${f}')">${f}${c?`<span class="badge">${c}</span>`:""}</div>`});
-  profileUser.textContent=current;
-  profileStats.textContent="好友："+users[current].friends.length;
-  avatarImg.src=users[current].avatar||"https://via.placeholder.com/150";
-  coverImg.src=users[current].cover||"";
-
-  myPosts.innerHTML="";users[current].posts.forEach(p=>{myPosts.innerHTML+=`<div class="card"><div class="small">${new Date(p.time).toLocaleString()}</div><div>${p.text||""}</div>${p.img?`<img class="postimg" src="${p.img}">`:''}</div>`});
+function renderProfile(){
+  const u=users[viewUser];
+  profile.innerHTML=`
+  <div class="card">
+    <img class="cover" src="${u.cover||'https://via.placeholder.com/800x200'}">
+    <img class="bigAvatar" src="${u.avatar||'https://via.placeholder.com/150'}">
+    <h3>${viewUser}</h3>
+    <div class="small">好友 ${u.friends.length}</div>
+    ${viewUser!==current?`
+      <button onclick="removeFriend('${viewUser}')">取消好友</button>
+      <button onclick="block('${viewUser}')">封鎖</button>`:""}
+  </div>
+  ${u.posts.map(p=>`
+    <div class="card">
+      <div>${p.text}</div>
+      ${(p.imgs||[]).map(i=>`<img src="${i}">`).join("")}
+    </div>`).join("")}
+  `;
 }
 
-/* uploads */
-avatarInput.onchange=()=>{const r=new FileReader();r.onload=()=>{users[current].avatar=r.result;save();render()};r.readAsDataURL(avatarInput.files[0])};
-coverInput.onchange=()=>{const r=new FileReader();r.onload=()=>{users[current].cover=r.result;save();render()};r.readAsDataURL(coverInput.files[0])};
+function like(owner,id){
+  const p=users[owner].posts.find(x=>x.id===id);
+  const i=p.likes.indexOf(current);
+  if(i>-1)p.likes.splice(i,1);else p.likes.push(current);
+  save();renderFeed();
+}
 
-/* auto login & mode */
-if(localStorage.mode==="light")document.body.classList.add("light");
-if(localStorage.current&&users[localStorage.current]){current=localStorage.current;auth.classList.add("hidden");nav.classList.remove("hidden");show("home");}
+function removeFriend(u){
+  users[current].friends=users[current].friends.filter(f=>f!==u);
+  users[u].friends=users[u].friends.filter(f=>f!==current);
+  save();showProfile();
+}
+function block(u){
+  users[current].blocks.push(u);
+  removeFriend(u);
+}
+
+if(current&&users[current]){
+  auth.classList.add("hidden");
+  nav.classList.remove("hidden");
+  showFeed();
+}
 </script>
 </body>
 </html>
-
