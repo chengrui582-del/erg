@@ -1,227 +1,505 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>City Social</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <style>
 :root{
-  --bg:#0b0f14;
-  --card:#141922;
-  --text:#fff;
-  --sub:#9aa4b2;
-  --blue:#1f6feb;
-}
-.light{
-  --bg:#f2f3f5;
+  --bg:#f2f2f2;
   --card:#fff;
-  --text:#000;
+  --text:#111;
   --sub:#666;
+  --accent:#1877f2;
+}
+body.dark{
+  --bg:#0f1115;
+  --card:#1c1f26;
+  --text:#eee;
+  --sub:#aaa;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont;
-  background:
-    linear-gradient(to bottom,rgba(0,0,0,.6),rgba(0,0,0,.9)),
-    url("https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=1400&q=80")
-    center/cover fixed;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg) url("assets/city.jpg") center/cover fixed;
   color:var(--text);
 }
 header{
-  position:sticky;top:0;z-index:9;
-  background:var(--card);
-  padding:12px 16px;
-  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;
+  backdrop-filter:blur(10px);
+  background:rgba(0,0,0,.3);
+  color:#fff;
+  padding:12px;
+  display:flex;
+  justify-content:space-between;
 }
-main{max-width:520px;margin:auto;padding:12px;padding-bottom:90px}
+main{padding-bottom:80px}
 .card{
   background:var(--card);
-  border-radius:18px;
-  padding:14px;
-  margin-bottom:14px;
+  margin:12px;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
 }
-.hidden{display:none}
-input,textarea{
-  width:100%;background:transparent;color:var(--text);
-  border:1px solid #444;border-radius:12px;
-  padding:10px;margin:6px 0;
+input,textarea,button{
+  width:100%;
+  border:none;
+  padding:10px;
+  border-radius:10px;
+  margin-top:6px;
 }
 button{
-  border:none;border-radius:20px;
-  padding:6px 14px;background:var(--blue);
+  background:var(--accent);
   color:#fff;
+  font-weight:600;
 }
 .nav{
-  position:fixed;bottom:0;left:0;right:0;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:60px;
   background:var(--card);
-  display:flex;justify-content:space-around;
-  padding:10px 0;font-size:22px;
+  display:flex;
+  border-top:1px solid #ccc;
 }
-.post img{width:100%;border-radius:12px;margin-top:6px}
-.post-head{display:flex;align-items:center;gap:10px}
+.nav div{
+  flex:1;
+  text-align:center;
+  padding-top:8px;
+  font-size:12px;
+}
+.nav span{display:block;font-size:22px}
 .avatar{
-  width:38px;height:38px;border-radius:50%;
+  width:42px;height:42px;
+  border-radius:50%;
   object-fit:cover;
 }
-.actions{display:flex;gap:14px;font-size:18px;margin:6px 0}
-.comment{font-size:14px;margin-top:4px}
-.cover{width:100%;height:140px;object-fit:cover;border-radius:18px 18px 0 0}
-.bigAvatar{
-  width:96px;height:96px;border-radius:50%;
-  margin-top:-48px;border:4px solid var(--card);
+.post-img{
+  width:100%;
+  border-radius:12px;
+  margin-top:8px;
 }
-.small{font-size:13px;color:var(--sub)}
+.like{color:red}
+.hidden{display:none}
+.chat{
+  max-height:300px;
+  overflow:auto;
+}
+.msg{
+  margin:6px 0;
+  padding:8px;
+  border-radius:12px;
+  max-width:70%;
+}
+.me{background:#1877f2;color:#fff;margin-left:auto}
+.you{background:#ddd;color:#000}
+.badge{
+  background:red;color:#fff;
+  border-radius:50%;
+  font-size:10px;
+  padding:2px 6px;
+}
 </style>
 </head>
 
 <body>
 <header>
-  <b>🌃 City Social</b>
-  <div>
-    <span onclick="toggleMode()">🌙</span>
-    <span onclick="logout()">登出</span>
-  </div>
+  <b>🏙 City Social</b>
+  <button onclick="toggleDark()">🌙</button>
 </header>
 
-<main>
+<main id="app"></main>
 
-<!-- 登入 -->
-<div class="card" id="auth">
-  <input id="user" placeholder="帳號">
-  <input id="pass" type="password" placeholder="密碼">
-  <button onclick="login()">登入 / 註冊</button>
-</div>
-
-<!-- 動態牆 -->
-<div id="feed" class="hidden"></div>
-
-<!-- 個人頁 -->
-<div id="profile" class="hidden"></div>
-
-<!-- 聊天 -->
-<div id="messages" class="hidden"></div>
-
-</main>
-
-<div class="nav hidden" id="nav">
-  <div onclick="showFeed()">🏠</div>
-  <div onclick="showMessages()">💬</div>
-  <div onclick="showProfile()">👤</div>
+<div class="nav">
+  <div onclick="view('feed')"><span>🏠</span>首頁</div>
+  <div onclick="view('chat')"><span>💬</span>聊天 <span id="unread" class="badge hidden">!</span></div>
+  <div onclick="view('profile')"><span>👤</span>個人</div>
 </div>
 
 <script>
-let users=JSON.parse(localStorage.users||"{}");
-let current=localStorage.current||null;
-let viewUser=null;
+/* ========= 資料 ========= */
+let me = localStorage.me || prompt("輸入你的名字");
+localStorage.me = me;
 
-function save(){localStorage.users=JSON.stringify(users)}
+let users = JSON.parse(localStorage.users||"{}");
+if(!users[me]){
+  users[me]={friends:[],posts:[],msgs:{}};
+}
+localStorage.users = JSON.stringify(users);
 
-function login(){
-  const u=user.value.trim(),p=pass.value;
-  if(!u||!p)return alert("請輸入帳密");
-  if(!users[u])users[u]={pass:p,avatar:"",cover:"",friends:[],blocks:[],requests:[],posts:[]};
-  if(users[u].pass!==p)return alert("密碼錯誤");
-  current=u;localStorage.current=u;
-  auth.classList.add("hidden");
-  nav.classList.remove("hidden");
-  showFeed();
+/* ========= UI ========= */
+const app = document.getElementById("app");
+
+function view(v){
+  if(v==="feed") feed();
+  if(v==="chat") chatList();
+  if(v==="profile") profile(me);
 }
 
-function logout(){localStorage.clear();location.reload()}
-function toggleMode(){document.body.classList.toggle("light")}
-
-function showFeed(){
-  hideAll();
-  feed.classList.remove("hidden");
-  renderFeed();
-}
-function showProfile(u=current){
-  hideAll();
-  viewUser=u;
-  profile.classList.remove("hidden");
-  renderProfile();
-}
-function showMessages(){
-  hideAll();
-  messages.classList.remove("hidden");
-  messages.innerHTML="<div class='card'>聊天系統（略，已可延伸）</div>";
-}
-function hideAll(){
-  feed.classList.add("hidden");
-  profile.classList.add("hidden");
-  messages.classList.add("hidden");
+function toggleDark(){
+  document.body.classList.toggle("dark");
 }
 
-function renderFeed(){
-  feed.innerHTML="";
-  let all=[];
-  users[current].friends.forEach(f=>{
-    if(users[f]) users[f].posts.forEach(p=>all.push({...p,owner:f}));
-  });
-  users[current].posts.forEach(p=>all.push({...p,owner:current}));
-  all.sort((a,b)=>b.time-a.time);
+/* ========= Feed ========= */
+function feed(){
+app.innerHTML=`
+<div class="card">
+  <textarea id="postText" placeholder="你在想什麼？"></textarea>
+  <input type="file" id="postImg" multiple>
+  <button onclick="addPost()">發佈</button>
+</div>
+`;
 
-  all.forEach(p=>{
-    feed.innerHTML+=`
-    <div class="card post">
-      <div class="post-head">
-        <img class="avatar" src="${users[p.owner].avatar||'https://via.placeholder.com/50'}"
-          onclick="showProfile('${p.owner}')">
-        <b>${p.owner}</b>
-      </div>
-      <div>${p.text||""}</div>
-      ${(p.imgs||[]).map(i=>`<img src="${i}">`).join("")}
-      <div class="actions">
-        <span onclick="like('${p.owner}','${p.id}')">❤️ ${p.likes.length}</span>
-      </div>
-      ${p.comments.map(c=>`<div class="comment"><b>${c.from}</b> ${c.text}</div>`).join("")}
-    </div>`;
-  });
-}
-
-function renderProfile(){
-  const u=users[viewUser];
-  profile.innerHTML=`
-  <div class="card">
-    <img class="cover" src="${u.cover||'https://via.placeholder.com/800x200'}">
-    <img class="bigAvatar" src="${u.avatar||'https://via.placeholder.com/150'}">
-    <h3>${viewUser}</h3>
-    <div class="small">好友 ${u.friends.length}</div>
-    ${viewUser!==current?`
-      <button onclick="removeFriend('${viewUser}')">取消好友</button>
-      <button onclick="block('${viewUser}')">封鎖</button>`:""}
+users[me].posts.forEach((p,i)=>{
+app.innerHTML+=`
+<div class="card">
+  <b>${me}</b>
+  <p>${p.text}</p>
+  ${p.imgs.map(img=>`<img class="post-img" src="${img}">`).join("")}
+  <div>
+    <button onclick="like(${i})">❤️ ${p.likes||0}</button>
+    <button onclick="delPost(${i})">🗑</button>
   </div>
-  ${u.posts.map(p=>`
-    <div class="card">
-      <div>${p.text}</div>
-      ${(p.imgs||[]).map(i=>`<img src="${i}">`).join("")}
-    </div>`).join("")}
-  `;
+</div>`;
+});
 }
 
-function like(owner,id){
-  const p=users[owner].posts.find(x=>x.id===id);
-  const i=p.likes.indexOf(current);
-  if(i>-1)p.likes.splice(i,1);else p.likes.push(current);
-  save();renderFeed();
+function addPost(){
+let text = postText.value;
+let files = postImg.files;
+let imgs=[];
+if(files.length){
+  [...files].forEach(f=>{
+    let r=new FileReader();
+    r.onload=e=>{
+      imgs.push(e.target.result);
+      if(imgs.length===files.length) save();
+    }
+    r.readAsDataURL(f);
+  });
+}else save();
+
+function save(){
+users[me].posts.unshift({text,imgs,likes:0});
+localStorage.users=JSON.stringify(users);
+feed();
+}
 }
 
-function removeFriend(u){
-  users[current].friends=users[current].friends.filter(f=>f!==u);
-  users[u].friends=users[u].friends.filter(f=>f!==current);
-  save();showProfile();
+function like(i){
+users[me].posts[i].likes++;
+localStorage.users=JSON.stringify(users);
+feed();
 }
-function block(u){
-  users[current].blocks.push(u);
-  removeFriend(u);
+function delPost(i){
+users[me].posts.splice(i,1);
+localStorage.users=JSON.stringify(users);
+feed();
 }
 
-if(current&&users[current]){
-  auth.classList.add("hidden");
-  nav.classList.remove("hidden");
-  showFeed();
+/* ========= Chat ========= */
+function chatList(){
+app.innerHTML="";
+let u=users[me];
+for(let f of u.friends){
+app.innerHTML+=`
+<div class="card" onclick="chat('${f}')">
+  👤 ${f}
+</div>`;
 }
+}
+
+function chat(who){
+let msgs=users[me].msgs[who]||[];
+app.innerHTML=`
+<div class="card chat" id="chatBox"></div>
+<input id="msgText" placeholder="輸入訊息">
+<input type="file" id="imgSend">
+<button onclick="send('${who}')">送出</button>
+`;
+let box=document.getElementById("chatBox");
+msgs.forEach(m=>{
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>City Social</title>
+
+<style>
+:root{
+  --bg:#f2f2f2;
+  --card:#fff;
+  --text:#111;
+  --sub:#666;
+  --accent:#1877f2;
+}
+body.dark{
+  --bg:#0f1115;
+  --card:#1c1f26;
+  --text:#eee;
+  --sub:#aaa;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg) url("assets/city.jpg") center/cover fixed;
+  color:var(--text);
+}
+header{
+  position:sticky;top:0;
+  backdrop-filter:blur(10px);
+  background:rgba(0,0,0,.3);
+  color:#fff;
+  padding:12px;
+  display:flex;
+  justify-content:space-between;
+}
+main{padding-bottom:80px}
+.card{
+  background:var(--card);
+  margin:12px;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+}
+input,textarea,button{
+  width:100%;
+  border:none;
+  padding:10px;
+  border-radius:10px;
+  margin-top:6px;
+}
+button{
+  background:var(--accent);
+  color:#fff;
+  font-weight:600;
+}
+.nav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:60px;
+  background:var(--card);
+  display:flex;
+  border-top:1px solid #ccc;
+}
+.nav div{
+  flex:1;
+  text-align:center;
+  padding-top:8px;
+  font-size:12px;
+}
+.nav span{display:block;font-size:22px}
+.avatar{
+  width:42px;height:42px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.post-img{
+  width:100%;
+  border-radius:12px;
+  margin-top:8px;
+}
+.like{color:red}
+.hidden{display:none}
+.chat{
+  max-height:300px;
+  overflow:auto;
+}
+.msg{
+  margin:6px 0;
+  padding:8px;
+  border-radius:12px;
+  max-width:70%;
+}
+.me{background:#1877f2;color:#fff;margin-left:auto}
+.you{background:#ddd;color:#000}
+.badge{
+  background:red;color:#fff;
+  border-radius:50%;
+  font-size:10px;
+  padding:2px 6px;
+}
+</style>
+</head>
+
+<body>
+<header>
+  <b>🏙 City Social</b>
+  <button onclick="toggleDark()">🌙</button>
+</header>
+
+<main id="app"></main>
+
+<div class="nav">
+  <div onclick="view('feed')"><span>🏠</span>首頁</div>
+  <div onclick="view('chat')"><span>💬</span>聊天 <span id="unread" class="badge hidden">!</span></div>
+  <div onclick="view('profile')"><span>👤</span>個人</div>
+</div>
+
+<script>
+/* ========= 資料 ========= */
+let me = localStorage.me || prompt("輸入你的名字");
+localStorage.me = me;
+
+let users = JSON.parse(localStorage.users||"{}");
+if(!users[me]){
+  users[me]={friends:[],posts:[],msgs:{}};
+}
+localStorage.users = JSON.stringify(users);
+
+/* ========= UI ========= */
+const app = document.getElementById("app");
+
+function view(v){
+  if(v==="feed") feed();
+  if(v==="chat") chatList();
+  if(v==="profile") profile(me);
+}
+
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+
+/* ========= Feed ========= */
+function feed(){
+app.innerHTML=`
+<div class="card">
+  <textarea id="postText" placeholder="你在想什麼？"></textarea>
+  <input type="file" id="postImg" multiple>
+  <button onclick="addPost()">發佈</button>
+</div>
+`;
+
+users[me].posts.forEach((p,i)=>{
+app.innerHTML+=`
+<div class="card">
+  <b>${me}</b>
+  <p>${p.text}</p>
+  ${p.imgs.map(img=>`<img class="post-img" src="${img}">`).join("")}
+  <div>
+    <button onclick="like(${i})">❤️ ${p.likes||0}</button>
+    <button onclick="delPost(${i})">🗑</button>
+  </div>
+</div>`;
+});
+}
+
+function addPost(){
+let text = postText.value;
+let files = postImg.files;
+let imgs=[];
+if(files.length){
+  [...files].forEach(f=>{
+    let r=new FileReader();
+    r.onload=e=>{
+      imgs.push(e.target.result);
+      if(imgs.length===files.length) save();
+    }
+    r.readAsDataURL(f);
+  });
+}else save();
+
+function save(){
+users[me].posts.unshift({text,imgs,likes:0});
+localStorage.users=JSON.stringify(users);
+feed();
+}
+}
+
+function like(i){
+users[me].posts[i].likes++;
+localStorage.users=JSON.stringify(users);
+feed();
+}
+function delPost(i){
+users[me].posts.splice(i,1);
+localStorage.users=JSON.stringify(users);
+feed();
+}
+
+/* ========= Chat ========= */
+function chatList(){
+app.innerHTML="";
+let u=users[me];
+for(let f of u.friends){
+app.innerHTML+=`
+<div class="card" onclick="chat('${f}')">
+  👤 ${f}
+</div>`;
+}
+}
+
+function chat(who){
+let msgs=users[me].msgs[who]||[];
+app.innerHTML=`
+<div class="card chat" id="chatBox"></div>
+<input id="msgText" placeholder="輸入訊息">
+<input type="file" id="imgSend">
+<button onclick="send('${who}')">送出</button>
+`;
+let box=document.getElementById("chatBox");
+msgs.forEach(m=>{
+box.innerHTML+=`
+<div class="msg ${m.me?'me':'you'}">
+  ${m.text||""}
+  ${m.img?`<img class="post-img" src="${m.img}">`:""}
+</div>`;
+});
+box.scrollTop=9999;
+}
+
+function send(who){
+let text=msgText.value;
+let file=imgSend.files[0];
+if(!users[me].msgs[who]) users[me].msgs[who]=[];
+if(!users[who].msgs[me]) users[who].msgs[me]=[];
+
+if(file){
+let r=new FileReader();
+r.onload=e=>{
+push(null,e.target.result);
+}
+r.readAsDataURL(file);
+}else push(text,null);
+
+function push(t,i){
+users[me].msgs[who].push({me:true,text:t,img:i});
+users[who].msgs[me].push({me:false,text:t,img:i});
+localStorage.users=JSON.stringify(users);
+chat(who);
+}
+}
+
+/* ========= Profile ========= */
+function profile(name){
+let u=users[name];
+app.innerHTML=`
+<div class="card">
+  <img src="assets/avatar.png" class="avatar">
+  <h3>${name}</h3>
+  <p>好友 ${u.friends.length}</p>
+  <input id="addName" placeholder="加好友">
+  <button onclick="addFriend()">加好友</button>
+</div>
+`;
+}
+
+function addFriend(){
+let f=addName.value;
+if(!users[f]){alert("不存在");return;}
+if(users[me].friends.includes(f))return;
+users[me].friends.push(f);
+users[f].friends.push(me);
+localStorage.users=JSON.stringify(users);
+alert("已成為好友");
+profile(me);
+}
+
+/* ========= 啟動 ========= */
+view("feed");
 </script>
 </body>
 </html>
