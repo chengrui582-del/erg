@@ -1,505 +1,181 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>City Social</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1877f2">
 
 <style>
 :root{
-  --bg:#f2f2f2;
-  --card:#fff;
-  --text:#111;
-  --sub:#666;
-  --accent:#1877f2;
+  --bg:#0f1115;--card:#181b22;--text:#fff;--sub:#aaa;--blue:#1877f2;
 }
-body.dark{
-  --bg:#0f1115;
-  --card:#1c1f26;
-  --text:#eee;
-  --sub:#aaa;
+.light{
+  --bg:#f4f4f4;--card:#fff;--text:#000;--sub:#555;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;font-family:system-ui}
 body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:var(--bg) url("assets/city.jpg") center/cover fixed;
-  color:var(--text);
+  margin:0;background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.9)),
+  url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1200");
+  background-size:cover;background-attachment:fixed;color:var(--text);
 }
-header{
-  position:sticky;top:0;
-  backdrop-filter:blur(10px);
-  background:rgba(0,0,0,.3);
-  color:#fff;
-  padding:12px;
-  display:flex;
-  justify-content:space-between;
-}
-main{padding-bottom:80px}
-.card{
-  background:var(--card);
-  margin:12px;
-  border-radius:14px;
-  padding:12px;
-  box-shadow:0 6px 20px rgba(0,0,0,.15);
-}
-input,textarea,button{
-  width:100%;
-  border:none;
-  padding:10px;
-  border-radius:10px;
-  margin-top:6px;
-}
-button{
-  background:var(--accent);
-  color:#fff;
-  font-weight:600;
-}
-.nav{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  height:60px;
-  background:var(--card);
-  display:flex;
-  border-top:1px solid #ccc;
-}
-.nav div{
-  flex:1;
-  text-align:center;
-  padding-top:8px;
-  font-size:12px;
-}
-.nav span{display:block;font-size:22px}
-.avatar{
-  width:42px;height:42px;
-  border-radius:50%;
-  object-fit:cover;
-}
-.post-img{
-  width:100%;
-  border-radius:12px;
-  margin-top:8px;
-}
-.like{color:red}
 .hidden{display:none}
-.chat{
-  max-height:300px;
-  overflow:auto;
+button{background:var(--blue);color:#fff;border:none;border-radius:20px;padding:6px 14px}
+
+header{
+  position:sticky;top:0;z-index:10;
+  background:var(--card);
+  display:flex;justify-content:space-between;
+  padding:10px 14px;font-weight:700
 }
-.msg{
-  margin:6px 0;
-  padding:8px;
-  border-radius:12px;
-  max-width:70%;
+header span{cursor:pointer}
+
+#app{max-width:420px;margin:auto}
+
+.card{background:var(--card);margin:12px;border-radius:14px;padding:12px}
+
+.post img{width:100%;border-radius:10px}
+.post-images{
+  display:flex;overflow-x:auto;scroll-snap-type:x mandatory
 }
-.me{background:#1877f2;color:#fff;margin-left:auto}
-.you{background:#ddd;color:#000}
-.badge{
-  background:red;color:#fff;
-  border-radius:50%;
-  font-size:10px;
-  padding:2px 6px;
+.post-images img{flex-shrink:0;scroll-snap-align:center}
+.post-head{display:flex;align-items:center;gap:8px}
+.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.actions{font-size:22px;padding:6px 0}
+
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--card);
+  display:flex;justify-content:space-around;
+  padding:6px 0
+}
+.nav span{font-size:22px;cursor:pointer}
+
+input,textarea{
+  width:100%;border-radius:10px;border:none;
+  padding:8px;margin:6px 0
 }
 </style>
 </head>
 
 <body>
+<div id="app">
+
 <header>
-  <b>🏙 City Social</b>
-  <button onclick="toggleDark()">🌙</button>
+  <span>City Social</span>
+  <div>
+    <span onclick="toggleMode()">🌙</span>
+    <span onclick="logout()">🚪</span>
+  </div>
 </header>
 
-<main id="app"></main>
+<!-- 登入 -->
+<div id="login" class="card">
+  <h3>登入</h3>
+  <input id="name" placeholder="輸入暱稱">
+  <button onclick="login()">登入</button>
+</div>
+
+<!-- 動態牆 -->
+<div id="feed" class="hidden">
+  <div class="card">
+    <textarea id="postText" placeholder="發文內容"></textarea>
+    <input type="file" id="postImg" multiple>
+    <button onclick="addPost()">發布</button>
+  </div>
+  <div id="posts"></div>
+</div>
+
+<!-- 聊天 -->
+<div id="chat" class="hidden">
+  <div id="chatBox" class="card" style="height:300px;overflow:auto"></div>
+  <input id="msg" placeholder="輸入訊息">
+  <input type="file" id="chatImg">
+  <button onclick="sendMsg()">送出</button>
+</div>
+
+<!-- 個人頁 -->
+<div id="profile" class="hidden">
+  <div class="card">
+    <img id="cover" src="https://picsum.photos/400/150">
+    <img id="avatar" class="avatar" src="https://i.pravatar.cc/100">
+    <h3 id="me"></h3>
+    <p id="friends"></p>
+  </div>
+  <div id="myPosts"></div>
+</div>
+
+</div>
 
 <div class="nav">
-  <div onclick="view('feed')"><span>🏠</span>首頁</div>
-  <div onclick="view('chat')"><span>💬</span>聊天 <span id="unread" class="badge hidden">!</span></div>
-  <div onclick="view('profile')"><span>👤</span>個人</div>
+  <span onclick="view('feed')">🏠</span>
+  <span onclick="view('chat')">💬</span>
+  <span onclick="view('profile')">👤</span>
 </div>
 
 <script>
-/* ========= 資料 ========= */
-let me = localStorage.me || prompt("輸入你的名字");
-localStorage.me = me;
+let user=null,posts=[],msgs=[];
+if(localStorage.user){user=localStorage.user;init()}
 
-let users = JSON.parse(localStorage.users||"{}");
-if(!users[me]){
-  users[me]={friends:[],posts:[],msgs:{}};
+function login(){
+  user=name.value;
+  localStorage.user=user;
+  init();
 }
-localStorage.users = JSON.stringify(users);
-
-/* ========= UI ========= */
-const app = document.getElementById("app");
-
+function logout(){
+  localStorage.clear();location.reload();
+}
+function init(){
+  loginDiv.style.display="none";
+  view('feed');
+  me.innerText=user;
+}
 function view(v){
-  if(v==="feed") feed();
-  if(v==="chat") chatList();
-  if(v==="profile") profile(me);
+  feed.classList.add("hidden");
+  chat.classList.add("hidden");
+  profile.classList.add("hidden");
+  document.getElementById(v).classList.remove("hidden");
 }
-
-function toggleDark(){
-  document.body.classList.toggle("dark");
+function toggleMode(){
+  document.body.classList.toggle("light");
 }
-
-/* ========= Feed ========= */
-function feed(){
-app.innerHTML=`
-<div class="card">
-  <textarea id="postText" placeholder="你在想什麼？"></textarea>
-  <input type="file" id="postImg" multiple>
-  <button onclick="addPost()">發佈</button>
-</div>
-`;
-
-users[me].posts.forEach((p,i)=>{
-app.innerHTML+=`
-<div class="card">
-  <b>${me}</b>
-  <p>${p.text}</p>
-  ${p.imgs.map(img=>`<img class="post-img" src="${img}">`).join("")}
-  <div>
-    <button onclick="like(${i})">❤️ ${p.likes||0}</button>
-    <button onclick="delPost(${i})">🗑</button>
-  </div>
-</div>`;
-});
-}
-
 function addPost(){
-let text = postText.value;
-let files = postImg.files;
-let imgs=[];
-if(files.length){
-  [...files].forEach(f=>{
-    let r=new FileReader();
-    r.onload=e=>{
-      imgs.push(e.target.result);
-      if(imgs.length===files.length) save();
-    }
-    r.readAsDataURL(f);
+  const txt=postText.value;
+  const imgs=[...postImg.files].map(f=>URL.createObjectURL(f));
+  posts.unshift({u:user,t:txt,i:imgs});
+  renderPosts();
+}
+function renderPosts(){
+  postsDiv.innerHTML="";
+  posts.forEach(p=>{
+    postsDiv.innerHTML+=`
+    <div class="card post">
+      <div class="post-head">
+        <img class="avatar" src="https://i.pravatar.cc/40">
+        <b>${p.u}</b>
+      </div>
+      <div class="post-images">
+        ${p.i.map(i=>`<img src="${i}">`).join("")}
+      </div>
+      <div class="actions">❤️ 💬</div>
+      <div>${p.t}</div>
+    </div>`;
   });
-}else save();
-
-function save(){
-users[me].posts.unshift({text,imgs,likes:0});
-localStorage.users=JSON.stringify(users);
-feed();
 }
-}
-
-function like(i){
-users[me].posts[i].likes++;
-localStorage.users=JSON.stringify(users);
-feed();
-}
-function delPost(i){
-users[me].posts.splice(i,1);
-localStorage.users=JSON.stringify(users);
-feed();
+function sendMsg(){
+  if(msg.value){
+    msgs.push(`<b>${user}：</b>${msg.value}`);
+    chatBox.innerHTML=msgs.join("<br>");
+    msg.value="";
+  }
 }
 
-/* ========= Chat ========= */
-function chatList(){
-app.innerHTML="";
-let u=users[me];
-for(let f of u.friends){
-app.innerHTML+=`
-<div class="card" onclick="chat('${f}')">
-  👤 ${f}
-</div>`;
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("sw.js");
 }
-}
-
-function chat(who){
-let msgs=users[me].msgs[who]||[];
-app.innerHTML=`
-<div class="card chat" id="chatBox"></div>
-<input id="msgText" placeholder="輸入訊息">
-<input type="file" id="imgSend">
-<button onclick="send('${who}')">送出</button>
-`;
-let box=document.getElementById("chatBox");
-msgs.forEach(m=>{
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>City Social</title>
-
-<style>
-:root{
-  --bg:#f2f2f2;
-  --card:#fff;
-  --text:#111;
-  --sub:#666;
-  --accent:#1877f2;
-}
-body.dark{
-  --bg:#0f1115;
-  --card:#1c1f26;
-  --text:#eee;
-  --sub:#aaa;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:var(--bg) url("assets/city.jpg") center/cover fixed;
-  color:var(--text);
-}
-header{
-  position:sticky;top:0;
-  backdrop-filter:blur(10px);
-  background:rgba(0,0,0,.3);
-  color:#fff;
-  padding:12px;
-  display:flex;
-  justify-content:space-between;
-}
-main{padding-bottom:80px}
-.card{
-  background:var(--card);
-  margin:12px;
-  border-radius:14px;
-  padding:12px;
-  box-shadow:0 6px 20px rgba(0,0,0,.15);
-}
-input,textarea,button{
-  width:100%;
-  border:none;
-  padding:10px;
-  border-radius:10px;
-  margin-top:6px;
-}
-button{
-  background:var(--accent);
-  color:#fff;
-  font-weight:600;
-}
-.nav{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  height:60px;
-  background:var(--card);
-  display:flex;
-  border-top:1px solid #ccc;
-}
-.nav div{
-  flex:1;
-  text-align:center;
-  padding-top:8px;
-  font-size:12px;
-}
-.nav span{display:block;font-size:22px}
-.avatar{
-  width:42px;height:42px;
-  border-radius:50%;
-  object-fit:cover;
-}
-.post-img{
-  width:100%;
-  border-radius:12px;
-  margin-top:8px;
-}
-.like{color:red}
-.hidden{display:none}
-.chat{
-  max-height:300px;
-  overflow:auto;
-}
-.msg{
-  margin:6px 0;
-  padding:8px;
-  border-radius:12px;
-  max-width:70%;
-}
-.me{background:#1877f2;color:#fff;margin-left:auto}
-.you{background:#ddd;color:#000}
-.badge{
-  background:red;color:#fff;
-  border-radius:50%;
-  font-size:10px;
-  padding:2px 6px;
-}
-</style>
-</head>
-
-<body>
-<header>
-  <b>🏙 City Social</b>
-  <button onclick="toggleDark()">🌙</button>
-</header>
-
-<main id="app"></main>
-
-<div class="nav">
-  <div onclick="view('feed')"><span>🏠</span>首頁</div>
-  <div onclick="view('chat')"><span>💬</span>聊天 <span id="unread" class="badge hidden">!</span></div>
-  <div onclick="view('profile')"><span>👤</span>個人</div>
-</div>
-
-<script>
-/* ========= 資料 ========= */
-let me = localStorage.me || prompt("輸入你的名字");
-localStorage.me = me;
-
-let users = JSON.parse(localStorage.users||"{}");
-if(!users[me]){
-  users[me]={friends:[],posts:[],msgs:{}};
-}
-localStorage.users = JSON.stringify(users);
-
-/* ========= UI ========= */
-const app = document.getElementById("app");
-
-function view(v){
-  if(v==="feed") feed();
-  if(v==="chat") chatList();
-  if(v==="profile") profile(me);
-}
-
-function toggleDark(){
-  document.body.classList.toggle("dark");
-}
-
-/* ========= Feed ========= */
-function feed(){
-app.innerHTML=`
-<div class="card">
-  <textarea id="postText" placeholder="你在想什麼？"></textarea>
-  <input type="file" id="postImg" multiple>
-  <button onclick="addPost()">發佈</button>
-</div>
-`;
-
-users[me].posts.forEach((p,i)=>{
-app.innerHTML+=`
-<div class="card">
-  <b>${me}</b>
-  <p>${p.text}</p>
-  ${p.imgs.map(img=>`<img class="post-img" src="${img}">`).join("")}
-  <div>
-    <button onclick="like(${i})">❤️ ${p.likes||0}</button>
-    <button onclick="delPost(${i})">🗑</button>
-  </div>
-</div>`;
-});
-}
-
-function addPost(){
-let text = postText.value;
-let files = postImg.files;
-let imgs=[];
-if(files.length){
-  [...files].forEach(f=>{
-    let r=new FileReader();
-    r.onload=e=>{
-      imgs.push(e.target.result);
-      if(imgs.length===files.length) save();
-    }
-    r.readAsDataURL(f);
-  });
-}else save();
-
-function save(){
-users[me].posts.unshift({text,imgs,likes:0});
-localStorage.users=JSON.stringify(users);
-feed();
-}
-}
-
-function like(i){
-users[me].posts[i].likes++;
-localStorage.users=JSON.stringify(users);
-feed();
-}
-function delPost(i){
-users[me].posts.splice(i,1);
-localStorage.users=JSON.stringify(users);
-feed();
-}
-
-/* ========= Chat ========= */
-function chatList(){
-app.innerHTML="";
-let u=users[me];
-for(let f of u.friends){
-app.innerHTML+=`
-<div class="card" onclick="chat('${f}')">
-  👤 ${f}
-</div>`;
-}
-}
-
-function chat(who){
-let msgs=users[me].msgs[who]||[];
-app.innerHTML=`
-<div class="card chat" id="chatBox"></div>
-<input id="msgText" placeholder="輸入訊息">
-<input type="file" id="imgSend">
-<button onclick="send('${who}')">送出</button>
-`;
-let box=document.getElementById("chatBox");
-msgs.forEach(m=>{
-box.innerHTML+=`
-<div class="msg ${m.me?'me':'you'}">
-  ${m.text||""}
-  ${m.img?`<img class="post-img" src="${m.img}">`:""}
-</div>`;
-});
-box.scrollTop=9999;
-}
-
-function send(who){
-let text=msgText.value;
-let file=imgSend.files[0];
-if(!users[me].msgs[who]) users[me].msgs[who]=[];
-if(!users[who].msgs[me]) users[who].msgs[me]=[];
-
-if(file){
-let r=new FileReader();
-r.onload=e=>{
-push(null,e.target.result);
-}
-r.readAsDataURL(file);
-}else push(text,null);
-
-function push(t,i){
-users[me].msgs[who].push({me:true,text:t,img:i});
-users[who].msgs[me].push({me:false,text:t,img:i});
-localStorage.users=JSON.stringify(users);
-chat(who);
-}
-}
-
-/* ========= Profile ========= */
-function profile(name){
-let u=users[name];
-app.innerHTML=`
-<div class="card">
-  <img src="assets/avatar.png" class="avatar">
-  <h3>${name}</h3>
-  <p>好友 ${u.friends.length}</p>
-  <input id="addName" placeholder="加好友">
-  <button onclick="addFriend()">加好友</button>
-</div>
-`;
-}
-
-function addFriend(){
-let f=addName.value;
-if(!users[f]){alert("不存在");return;}
-if(users[me].friends.includes(f))return;
-users[me].friends.push(f);
-users[f].friends.push(me);
-localStorage.users=JSON.stringify(users);
-alert("已成為好友");
-profile(me);
-}
-
-/* ========= 啟動 ========= */
-view("feed");
 </script>
 </body>
 </html>
+
