@@ -6,69 +6,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-*{box-sizing:border-box}
 :root{
+  --bg:#0b0f14;
   --card:#111c;
   --text:#fff;
 }
 .light{
+  --bg:#f4f4f4;
   --card:#fff;
   --text:#000;
 }
+
+*{box-sizing:border-box}
 body{
-  margin:0;font-family:-apple-system,BlinkMacSystemFont;
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont;
   background:
-    linear-gradient(rgba(0,0,0,.4),rgba(0,0,0,.7)),
+    linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.75)),
     url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63") center/cover fixed;
   color:var(--text);
+  background-color:var(--bg);
 }
+
 header{
-  position:sticky;top:0;z-index:9;
+  position:sticky;top:0;z-index:10;
   background:var(--card);
   padding:12px 16px;
-  display:flex;justify-content:space-between;
+  display:flex;justify-content:space-between;align-items:center;
 }
-main{max-width:520px;margin:auto;padding:12px;padding-bottom:80px}
+
+main{max-width:520px;margin:auto;padding:12px;padding-bottom:90px}
+
 .card{
   background:var(--card);
   border-radius:18px;
   padding:14px;
-  margin-bottom:16px;
+  margin-bottom:14px;
 }
-.hidden{display:none}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:12px;
+  border:1px solid #444;
+  background:transparent;
+  color:var(--text);
+}
+
 button{
   border:none;border-radius:20px;
-  padding:6px 12px;
+  padding:6px 14px;
   background:#1f6feb;color:#fff;
 }
-textarea,input{
-  width:100%;background:transparent;
-  border:1px solid #444;
-  border-radius:10px;
-  color:var(--text);
-  padding:10px;
-}
-.carousel{
-  display:flex;overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  gap:8px;margin-top:8px;
-}
-.carousel img{
-  flex:0 0 100%;
-  border-radius:14px;
-  scroll-snap-align:center;
-}
-.post-tools{
-  display:flex;gap:10px;
-  font-size:14px;margin-top:6px;
-}
-.post-tools span{cursor:pointer;opacity:.7}
-.post-tools span:hover{opacity:1}
+
+.hidden{display:none}
+
 .nav{
   position:fixed;bottom:0;left:0;right:0;
+  background:var(--card);
   display:flex;justify-content:space-around;
-  background:var(--card);padding:10px 0;
+  padding:10px 0;font-size:20px;
 }
+
+.badge{
+  background:red;border-radius:12px;
+  padding:2px 6px;font-size:12px;margin-left:6px;
+}
+
+.chatbox{max-height:50vh;overflow-y:auto}
+.msg{max-width:70%;padding:8px 12px;border-radius:16px;margin:6px 0}
+.me{background:#1f6feb;margin-left:auto}
+.other{background:#333}
+
+.chatimg{max-width:100%;border-radius:12px;margin-top:6px}
+
+/* Profile */
+.cover{
+  width:100%;height:140px;
+  background:#333;
+  border-radius:18px 18px 0 0;
+  object-fit:cover;
+}
+.avatar{
+  width:96px;height:96px;
+  border-radius:50%;
+  border:4px solid var(--card);
+  object-fit:cover;
+  margin-top:-48px;
+}
+.center{text-align:center}
+.postimg{max-width:100%;border-radius:12px;margin-top:6px}
+.small{font-size:13px;opacity:.7}
 </style>
 </head>
 
@@ -76,141 +105,243 @@ textarea,input{
 
 <header>
   <b>🌃 City Social</b>
-  <span onclick="toggleMode()">🌙</span>
+  <div>
+    <span onclick="toggleMode()">🌙</span>
+    <span onclick="logout()">登出</span>
+  </div>
 </header>
 
 <main>
 
-<!-- 登入 -->
+<!-- Auth -->
 <div class="card" id="auth">
-  <h3>登入 / 註冊</h3>
   <input id="user" placeholder="帳號">
   <input id="pass" type="password" placeholder="密碼">
-  <button onclick="login()">開始</button>
+  <button onclick="login()">登入 / 註冊</button>
 </div>
 
-<!-- HOME -->
+<!-- Home -->
 <div id="home" class="hidden">
   <div class="card">
-    <textarea id="text" placeholder="分享城市生活…"></textarea>
-    <input type="file" id="img" multiple>
-    <button onclick="publish()" id="postBtn">發布</button>
+    <input id="findUser" placeholder="輸入帳號">
+    <button onclick="addFriend()">加好友</button>
   </div>
-  <div id="feed"></div>
+  <div class="card">
+    <h4>好友邀請</h4>
+    <div id="requests"></div>
+  </div>
+</div>
+
+<!-- Messages -->
+<div id="messages" class="hidden">
+  <div class="card">
+    <h4>好友</h4>
+    <div id="friends"></div>
+  </div>
+  <div class="card hidden" id="chat">
+    <b id="chatWith"></b>
+    <div class="chatbox" id="chatbox"></div>
+    <input id="chatInput" placeholder="輸入訊息">
+    <input type="file" id="imgInput" accept="image/*">
+    <button onclick="sendMsg()">送出</button>
+  </div>
+</div>
+
+<!-- Profile -->
+<div id="profile" class="hidden">
+
+  <div class="card center">
+    <img id="coverImg" class="cover">
+    <input type="file" id="coverInput" accept="image/*">
+
+    <img id="avatarImg" class="avatar">
+    <input type="file" id="avatarInput" accept="image/*">
+
+    <h3 id="profileUser"></h3>
+    <div id="profileStats"></div>
+  </div>
+
+  <div class="card">
+    <textarea id="postText" placeholder="寫點什麼…"></textarea>
+    <input type="file" id="postImg" accept="image/*">
+    <button onclick="addPost()">發佈</button>
+  </div>
+
+  <div id="myPosts"></div>
 </div>
 
 </main>
 
 <div class="nav hidden" id="nav">
   <div onclick="show('home')">🏠</div>
+  <div onclick="show('messages')">💬</div>
+  <div onclick="show('profile')">👤</div>
 </div>
 
 <script>
-let current=null
-let editingIndex=null
-const users=JSON.parse(localStorage.users||"{}")
-const posts=JSON.parse(localStorage.posts||"[]")
-let mode=localStorage.mode||"dark"
-
-if(mode==="light")document.body.classList.add("light")
+let current=null,chatTarget=null;
+const users=JSON.parse(localStorage.users||"{}");
+const chats=JSON.parse(localStorage.chats||"{}");
+const unread=JSON.parse(localStorage.unread||"{}");
 
 function save(){
-  localStorage.users=JSON.stringify(users)
-  localStorage.posts=JSON.stringify(posts)
-  localStorage.mode=mode
+  localStorage.users=JSON.stringify(users);
+  localStorage.chats=JSON.stringify(chats);
+  localStorage.unread=JSON.stringify(unread);
 }
 
+/* mode */
 function toggleMode(){
-  document.body.classList.toggle("light")
-  mode=document.body.classList.contains("light")?"light":"dark"
-  save()
+  document.body.classList.toggle("light");
+  localStorage.mode=document.body.classList.contains("light")?"light":"dark";
 }
 
+/* login */
 function login(){
   if(!users[user.value])
-    users[user.value]={pass:pass.value}
-  if(users[user.value].pass!==pass.value)return alert("密碼錯")
-  current=user.value
-  auth.classList.add("hidden")
-  nav.classList.remove("hidden")
-  show("home")
-  render()
+    users[user.value]={pass:pass.value,avatar:"",cover:"",friends:[],requests:[],posts:[]};
+  if(users[user.value].pass!==pass.value)return alert("密碼錯");
+  current=user.value;
+  localStorage.current=current;
+  auth.classList.add("hidden");
+  nav.classList.remove("hidden");
+  show("home");save();render();
+}
+function logout(){localStorage.removeItem("current");location.reload();}
+
+/* page */
+function show(p){
+  ["home","messages","profile"].forEach(i=>document.getElementById(i).classList.add("hidden"));
+  document.getElementById(p).classList.remove("hidden");
+  render();
 }
 
-function show(v){
-  home.classList.add("hidden")
-  document.getElementById(v).classList.remove("hidden")
+/* friend */
+function addFriend(){
+  const t=findUser.value;
+  if(!users[t]||t===current)return alert("無法加入");
+  if(users[t].requests.includes(current))return;
+  users[t].requests.push(current);save();alert("已送邀請");
+}
+function accept(u){
+  users[current].friends.push(u);
+  users[u].friends.push(current);
+  users[current].requests=users[current].requests.filter(x=>x!==u);
+  save();render();
 }
 
-function publish(){
-  if(!text.value)return
-  const files=[...img.files]
-  const post={u:current,t:text.value,imgs:[]}
-
-  const finish=()=>{
-    if(editingIndex===null){
-      posts.unshift(post)
-    }else{
-      posts[editingIndex]=post
-      editingIndex=null
-      postBtn.textContent="發布"
-    }
-    save();render()
+/* chat */
+function openChat(u){
+  chatTarget=u;
+  chat.classList.remove("hidden");
+  chatWith.textContent="與 "+u+" 聊天";
+  unread[current]=unread[current]||{};
+  unread[current][u]=0;
+  save();renderChat();render();
+}
+function sendMsg(){
+  const key=[current,chatTarget].sort().join("__");
+  chats[key]=chats[key]||[];
+  const msg={from:current,text:chatInput.value,img:""};
+  const f=imgInput.files[0];
+  if(f){
+    const r=new FileReader();
+    r.onload=()=>{msg.img=r.result;chats[key].push(msg);markUnread();};
+    r.readAsDataURL(f);
+  }else{
+    chats[key].push(msg);markUnread();
   }
-
-  if(files.length){
-    let loaded=0
-    files.forEach(f=>{
-      const r=new FileReader()
-      r.onload=e=>{
-        post.imgs.push(e.target.result)
-        if(++loaded===files.length)finish()
-      }
-      r.readAsDataURL(f)
-    })
-  }else finish()
-
-  text.value="";img.value=""
+  chatInput.value="";imgInput.value="";
+}
+function markUnread(){
+  unread[chatTarget]=unread[chatTarget]||{};
+  unread[chatTarget][current]=(unread[chatTarget][current]||0)+1;
+  save();renderChat();render();
+}
+function renderChat(){
+  const key=[current,chatTarget].sort().join("__");
+  chatbox.innerHTML="";
+  (chats[key]||[]).forEach(m=>{
+    chatbox.innerHTML+=`<div class="msg ${m.from===current?"me":"other"}">
+      ${m.text||""}${m.img?`<img class="chatimg" src="${m.img}">`:""}
+    </div>`;
+  });
+  chatbox.scrollTop=9999;
 }
 
-function editPost(i){
-  const p=posts[i]
-  text.value=p.t
-  editingIndex=i
-  postBtn.textContent="儲存修改"
-  window.scrollTo({top:0,behavior:"smooth"})
-}
-
-function deletePost(i){
-  if(confirm("確定刪除這篇貼文？")){
-    posts.splice(i,1)
-    save();render()
+/* posts */
+function addPost(){
+  const text=postText.value;
+  const f=postImg.files[0];
+  if(!text&&!f)return;
+  const p={text,img:"",time:Date.now()};
+  if(f){
+    const r=new FileReader();
+    r.onload=()=>{p.img=r.result;users[current].posts.unshift(p);finishPost();};
+    r.readAsDataURL(f);
+  }else{
+    users[current].posts.unshift(p);finishPost();
   }
 }
+function finishPost(){
+  postText.value="";postImg.value="";
+  save();render();
+}
 
+/* render */
 function render(){
-  feed.innerHTML=""
-  posts.forEach((p,i)=>{
-    feed.innerHTML+=`
-    <div class="card">
-      <b>${p.u}</b>
-      <div>${p.t}</div>
+  if(!current)return;
 
-      ${p.imgs?.length?`
-        <div class="carousel">
-          ${p.imgs.map(img=>`<img src="${img}">`).join("")}
-        </div>`:""}
+  requests.innerHTML="";
+  users[current].requests.forEach(u=>{
+    requests.innerHTML+=`<div>${u}<button onclick="accept('${u}')">接受</button></div>`;
+  });
 
-      ${p.u===current?`
-      <div class="post-tools">
-        <span onclick="editPost(${i})">✏️ 編輯</span>
-        <span onclick="deletePost(${i})">🗑 刪除</span>
-      </div>`:""}
-    </div>`
-  })
+  friends.innerHTML="";
+  users[current].friends.forEach(f=>{
+    const c=unread[current]?.[f]||0;
+    friends.innerHTML+=`<div onclick="openChat('${f}')">${f}${c?`<span class="badge">${c}</span>`:""}</div>`;
+  });
+
+  profileUser.textContent=current;
+  profileStats.textContent="好友："+users[current].friends.length;
+  avatarImg.src=users[current].avatar||"https://via.placeholder.com/150";
+  coverImg.src=users[current].cover||"";
+
+  myPosts.innerHTML="";
+  users[current].posts.forEach(p=>{
+    myPosts.innerHTML+=`
+      <div class="card">
+        <div class="small">${new Date(p.time).toLocaleString()}</div>
+        <div>${p.text||""}</div>
+        ${p.img?`<img class="postimg" src="${p.img}">`:""}
+      </div>`;
+  });
+}
+
+/* upload */
+avatarInput.onchange=()=>{
+  const r=new FileReader();
+  r.onload=()=>{users[current].avatar=r.result;save();render();};
+  r.readAsDataURL(avatarInput.files[0]);
+};
+coverInput.onchange=()=>{
+  const r=new FileReader();
+  r.onload=()=>{users[current].cover=r.result;save();render();};
+  r.readAsDataURL(coverInput.files[0]);
+};
+
+/* auto */
+if(localStorage.mode==="light")document.body.classList.add("light");
+if(localStorage.current&&users[localStorage.current]){
+  current=localStorage.current;
+  auth.classList.add("hidden");
+  nav.classList.remove("hidden");
+  show("home");
 }
 </script>
 
 </body>
 </html>
+
 
